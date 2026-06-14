@@ -10,7 +10,7 @@ interface SimData {
 
 interface SimulationRoomProps {
   simData: SimData;
-  onExit: (evaluationData?: any) => void;
+  onExit: (transcriptData?: any) => void;
 }
 
 interface Message {
@@ -22,57 +22,24 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutos basados en el DAP
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutos
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
+  
+  const initRef = useRef(false);
 
-  const handleFinishSimulation = async () => {
-    setIsEvaluating(true);
-    try {
-      // Prompt estricto para forzar la evaluación en formato JSON
-      const evaluationPrompt: Message = {
-        role: 'system',
-        content: 'La entrevista ha terminado. Evalúa el desempeño del usuario basándote en toda la conversación. Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin markdown ni texto extra): {"score": 85, "strengths": ["fortaleza 1", "fortaleza 2"], "weaknesses": ["brecha 1", "brecha 2"], "actionPlan": "Sugerencias de mejora"}'
-      };
-
-      const finalMessages = [...messages, evaluationPrompt];
-
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
-        body: { messages: finalMessages }
-      });
-
-      if (error) throw new Error('Error al conectar con la Edge Function');
-      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-
-      // Limpiamos la respuesta por si la IA incluye bloques markdown (```json ... ```)
-      let jsonString = data.choices[0].message.content;
-      jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      const evaluationData = JSON.parse(jsonString);
-      
-      // Enviamos el JSON al componente padre para mostrar los resultados
-      onExit(evaluationData);
-
-    } catch (error) {
-      console.error('Error generando evaluación:', error);
-      // Datos de respaldo por si falla la estructura
-      onExit({
-        score: 0,
-        strengths: ['No se pudo procesar la información'],
-        weaknesses: ['Error de conexión al evaluar'],
-        actionPlan: 'Hubo un problema procesando tu entrevista. Por favor, intenta de nuevo.'
-      });
-    } finally {
-      setIsEvaluating(false);
-    }
+  // La sala de simulación ya no evalúa, solo recopila el historial (transcripción) y se lo pasa al padre
+  const handleFinishSimulation = (messagesToEvaluate: Message[] = messages) => {
+    onExit(messagesToEvaluate); 
   };
 
-  // Inicializar el prompt del sistema
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const initSimulation = async () => {
       const systemPrompt: Message = {
         role: 'system',
-        content: `Actúa como un reclutador Senior de Recursos Humanos especializado en el puesto de '${simData.role}' para un nivel '${simData.type}'. La dificultad de la entrevista es '${simData.diff}'. Tu objetivo es realizar una simulación de entrevista ${simData.simType || 'Aptitudinal y Técnica'}. Haz una pregunta a la vez, espera mi respuesta, y evalúa mi capacidad analítica, resolución de problemas y habilidades blandas. Empieza presentándote brevemente y haciendo la primera pregunta.`
+        content: `Actúa como reclutador Senior para '${simData.role}' (Nivel: '${simData.type}'). Reglas: 1) Haz exactamente 3 preguntas en total, UNA por mensaje. 2) Antes de cada pregunta, escribe explícitamente el número de pregunta (ej: "[Pregunta 1 de 3]"). 3) Espera la respuesta del candidato entre cada pregunta. 4) PROHIBIDO despedirte antes de la pregunta 3. 5) SOLO después de leer la respuesta a tu tercera pregunta, despídete y escribe EXACTAMENTE la palabra clave: ENTREVISTA_FINALIZADA.`
       };
       setMessages([systemPrompt]);
       await fetchAIResponse([systemPrompt]);
@@ -80,7 +47,6 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
     initSimulation();
   }, [simData]);
 
-  // Temporizador de la simulación
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -88,7 +54,6 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-scroll al último mensaje
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -96,8 +61,7 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
   const fetchAIResponse = async (currentMessages: Message[]) => {
     setIsLoading(true);
     try {
-      // Nota: En producción, esta llamada debe ir a tu backend (Supabase Edge Function) para proteger la API Key.
-      // Llamada segura a la Edge Function de Supabase
+      // Modo conversación: NO pasamos action: 'evaluate'
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: { messages: currentMessages }
       });
@@ -105,9 +69,19 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
       if (error) throw new Error('Error al conectar con la Edge Function');
       if (data.error) throw new Error(JSON.stringify(data.error));
       
-      const aiReply: Message = { role: 'assistant', content: data.choices[0].message.content };
+      const aiContent = data.choices[0].message.content;
+      const aiReply: Message = { role: 'assistant', content: aiContent };
       
-      setMessages((prev) => [...prev, aiReply]);
+      const updatedMessages = [...currentMessages, aiReply];
+      setMessages(updatedMessages);
+
+      const contentUpper = aiContent.toUpperCase();
+      if (contentUpper.includes('ENTREVISTA_FINALIZADA')) {
+        setTimeout(() => {
+          handleFinishSimulation(updatedMessages);
+        }, 3500); 
+      }
+
     } catch (error) {
       console.error('Error fetching AI:', error);
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Lo siento, ha ocurrido un error de conexión con el servidor. Por favor, intenta de nuevo.' }]);
@@ -136,10 +110,8 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
 
   return (
     <div className="pt-2 animate-in zoom-in-95 fade-in duration-500 fill-mode-forwards relative h-[85vh] flex flex-col">
-      {/* Contenedor principal de la sala */}
       <div className="flex-1 p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-xl dark:bg-slate-900/90 border border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.15)] flex flex-col overflow-hidden relative">
         
-        {/* Cabecera de la Sala */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -156,23 +128,14 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
               {formatTime(timeLeft)}
             </div>
             <button 
-              onClick={handleFinishSimulation}
-              disabled={isEvaluating}
-              className="text-xs font-bold text-white bg-slate-900 hover:bg-red-600 px-4 py-2 rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-wait flex items-center gap-2"
+              onClick={() => handleFinishSimulation()}
+              className="text-xs font-bold text-white bg-slate-900 hover:bg-red-600 px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-2"
             >
-              {isEvaluating ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Evaluando...
-                </>
-              ) : (
-                'Finalizar Sesión'
-              )}
+              Finalizar Sesión
             </button>
           </div>
         </div>
 
-        {/* Área de Mensajes */}
         <div className="flex-1 overflow-y-auto py-6 space-y-6 pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
           {messages.filter(m => m.role !== 'system').map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -198,7 +161,6 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Área de Input */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
           <form onSubmit={handleSendMessage} className="relative flex items-center">
             <input

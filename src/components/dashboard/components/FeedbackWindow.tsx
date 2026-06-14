@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../../supabase';
 
 interface FeedbackWindowProps {
   onBack: () => void;
@@ -6,60 +7,82 @@ interface FeedbackWindowProps {
 }
 
 export default function FeedbackWindow({ onBack, initialSim }: FeedbackWindowProps) {
-  // Reportes reales con datos técnicos del proyecto
-  const reports = [
-    {
-      id: 'sim-1',
-      role: 'Análisis de Operaciones y Procesos',
-      type: 'Ingeniería / Trainee',
-      date: '12/06/2026',
-      score: 86,
-      metrics: [
-        { name: 'Estructura Lógica y Fluidez', score: 90, color: 'bg-pink-500' },
-        { name: 'Propuesta Técnica y Arquitectura', score: 82, color: 'bg-cyan-500' },
-        { name: 'Comunicación y Lenguaje Profesional', score: 88, color: 'bg-amber-500' }
-      ],
-      gaps: [
-        'Falta profundizar en el análisis del factor de pico (Estándar UIT-T) para mitigar latencia en horas punta durante las simulaciones.',
-        'Se recomienda justificar con mayor rigor el margen de seguridad superior al 30% en la capacidad de balance de servidores AWS.'
-      ],
-      strengths: [
-        'Excelente dominio conceptual del Diagrama de Análisis de Procesos (DAP) y los tiempos de ciclo totales del servicio (27.2 min).',
-        'Sólida articulación de la propuesta de valor orientada a mitigar el subempleo profesional de egresados en Lima Metropolitana.'
-      ],
-      actionPlan: 'Revisar la documentación técnica del proyecto sobre AWS On-Demand y practicar la estructuración de respuestas bajo el método STAR para optimizar el bloque técnico de la entrevista.'
-    },
-    {
-      id: 'sim-2',
-      role: 'Gestión Estratégica y Finanzas',
-      type: 'Negocios / Prácticas',
-      date: '05/06/2026',
-      score: 79,
-      metrics: [
-        { name: 'Viabilidad Financiera y Costos', score: 72, color: 'bg-pink-500' },
-        { name: 'Segmentación y Conocimiento del Mercado', score: 86, color: 'bg-cyan-500' },
-        { name: 'Resolución de Casos de Negocio', score: 79, color: 'bg-amber-500' }
-      ],
-      gaps: [
-        'Se requiere mayor precisión al modelar el costo variable unitario (desglose exacto de comisiones fijas de CulqiLink y consumo de tokens de OpenAI).',
-        'Se omitió detallar la alta estacionalidad de suscripciones universitarias detectada en los periodos Marzo-Mayo y Agosto-Octubre.'
-      ],
-      strengths: [
-        'Impecable delimitación del mercado objetivo estimado (624k universitarios de pregrado en Lima, priorizando facultades afines desde ciclo 6to).',
-        'Gran entendimiento de la elasticidad de precios validada en las encuestas del grupo (planes comerciales de S/25 a S/55 mensuales).'
-      ],
-      actionPlan: 'Repasar la matriz de costos fijos mensuales de mantenimiento digital y los presupuestos variables de pauta publicitaria (CAC por Meta/TikTok Ads).'
-    }
-  ];
+  const [reports, setReports] = useState<any[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sincroniza el reporte inicial si viene desde el historial
-  const [activeIdx, setActiveIdx] = useState(() => {
-    if (initialSim) {
-      const found = reports.findIndex(r => r.role === initialSim);
-      if (found !== -1) return found;
-    }
-    return 0;
-  });
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('history')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const formattedReports = data.map((item: any) => {
+            // Extraemos el JSON guardado por la IA
+            const fb = item.feedback || {};
+            const rubric = fb.rubric || {};
+            
+            return {
+              id: item.id.toString(),
+              role: item.role,
+              type: item.difficulty,
+              date: new Date(item.created_at).toLocaleDateString(),
+              score: item.score || 0,
+              // Mapeamos la rúbrica de la IA a las barras de progreso
+              metrics: [
+                { name: 'Estructura Lógica y Fluidez', score: rubric.logica || rubric.estructura || 0, color: 'bg-pink-500' },
+                { name: 'Propuesta Técnica y Precisión', score: rubric.precision || 0, color: 'bg-cyan-500' },
+                { name: 'Comunicación y Claridad', score: rubric.claridad || rubric.tiempo || 0, color: 'bg-amber-500' }
+              ],
+              gaps: fb.weaknesses || ['No se detectaron brechas.'],
+              strengths: fb.strengths || ['No hay fortalezas registradas.'],
+              actionPlan: fb.actionPlan || 'Sigue practicando.'
+            };
+          });
+
+          setReports(formattedReports);
+
+          // Si el usuario llega desde el botón "Ver Reporte" del Historial
+          if (initialSim) {
+            const found = formattedReports.findIndex((r: any) => r.role === initialSim);
+            if (found !== -1) setActiveIdx(found);
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando reportes:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, [initialSim]);
+
+  // Pantalla de carga mientras se lee la base de datos
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 bg-white/90 dark:bg-slate-900/90 rounded-3xl border border-cyan-500/30">
+        <p className="text-slate-500 font-bold animate-pulse">Cargando tus reportes de IA...</p>
+      </div>
+    );
+  }
+
+  // Qué mostrar si el usuario entra pero aún no ha hecho simulaciones
+  if (reports.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 bg-white/90 dark:bg-slate-900/90 rounded-3xl border border-cyan-500/30 p-8 text-center space-y-4">
+        <p className="text-slate-500 font-bold">Aún no tienes simulaciones completadas para analizar.</p>
+        <button onClick={onBack} className="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-sm">
+          Volver al Panel
+        </button>
+      </div>
+    );
+  }
 
   const currentReport = reports[activeIdx];
 
@@ -123,7 +146,7 @@ export default function FeedbackWindow({ onBack, initialSim }: FeedbackWindowPro
           {/* Rúbricas analíticas */}
           <div className="space-y-4">
             <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rúbrica de Evaluación</h5>
-            {currentReport.metrics.map((m, idx) => (
+            {currentReport.metrics.map((m: any, idx: number) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
                   <span>{m.name}</span>
@@ -145,7 +168,7 @@ export default function FeedbackWindow({ onBack, initialSim }: FeedbackWindowPro
               Fortalezas Clave de la Sesión
             </h5>
             <ul className="list-disc list-inside space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
-              {currentReport.strengths.map((s, idx) => <li key={idx}>{s}</li>)}
+              {currentReport.strengths.map((s: string, idx: number) => <li key={idx}>{s}</li>)}
             </ul>
           </div>
 
@@ -155,7 +178,7 @@ export default function FeedbackWindow({ onBack, initialSim }: FeedbackWindowPro
               Brechas Críticas Detectadas
             </h5>
             <ul className="list-disc list-inside space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
-              {currentReport.gaps.map((g, idx) => <li key={idx}>{g}</li>)}
+              {currentReport.gaps.map((g: string, idx: number) => <li key={idx}>{g}</li>)}
             </ul>
           </div>
 

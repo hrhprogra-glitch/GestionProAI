@@ -2,7 +2,6 @@ import { useState } from 'react';
 import MainLayout from '../../layout';
 import WelcomeSplash from './components/WelcomeSplash';
 import SimulationWizard from './components/SimulationWizard';
-import SimulationRoom from './components/SimulationRoom';
 
 // Componentes Modulares del Dashboard
 import LiquidBackground from './components/LiquidBackground';
@@ -11,7 +10,7 @@ import HomeModules from './components/HomeModules';
 import CatalogWindow from './components/CatalogWindow';
 import FeedbackWindow from './components/FeedbackWindow';
 import HistoryWindow from './components/HistoryWindow';
-
+import ActiveSimulation from './components/ActiveSimulation';
 interface DashboardProps {
   userName: string;
   email: string;
@@ -77,8 +76,11 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
           )}
 
           {view === 'simulation' && activeRoomData && (
-            <SimulationRoom simData={activeRoomData} onExit={() => { setView('catalog'); setActiveRoomData(null); }} />
-          )}
+  <ActiveSimulation 
+    simData={activeRoomData} 
+    onComplete={() => { setView('catalog'); setActiveRoomData(null); }} 
+  />
+)}
 
           {view === 'feedback' && (
             <FeedbackWindow 
