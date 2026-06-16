@@ -11,6 +11,7 @@ import CatalogWindow from './components/CatalogWindow';
 import FeedbackWindow from './components/FeedbackWindow';
 import HistoryWindow from './components/HistoryWindow';
 import ActiveSimulation from './components/ActiveSimulation';
+
 interface DashboardProps {
   userName: string;
   email: string;
@@ -54,15 +55,15 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
 
       <div className="relative z-10 max-w-7xl mx-auto w-full space-y-6 px-4 sm:px-6 py-4 min-h-[90vh]">
         
-        {/* TOP BAR MODAL: Desaparece automáticamente en vistas internas */}
+        {/* TOP BAR MODAL: Desaparece automáticamente en vistas internas. Se usa z-[999] para forzar la máxima prioridad */}
         {view === 'home' && (
-          <div key="topbar" className="anim-topbar pb-4">
+          <div key="topbar" className="relative z-[999] anim-topbar pb-4">
             <TopBar userName={userName} email={email} onLogout={onLogout} />
           </div>
         )}
 
-        {/* CONTENEDOR DE RENDIMIENTO ANIMADO */}
-        <div key={view} className="anim-cinematic">
+        {/* CONTENEDOR DE RENDIMIENTO ANIMADO: Se usa z-10 para estar por debajo del TopBar */}
+        <div key={view} className="relative z-10 anim-cinematic">
           
           {view === 'home' && (
              <HomeModules setView={(targetView) => {
@@ -76,11 +77,11 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
           )}
 
           {view === 'simulation' && activeRoomData && (
-  <ActiveSimulation 
-    simData={activeRoomData} 
-    onComplete={() => { setView('catalog'); setActiveRoomData(null); }} 
-  />
-)}
+            <ActiveSimulation 
+              simData={activeRoomData} 
+              onComplete={() => { setView('catalog'); setActiveRoomData(null); }} 
+            />
+          )}
 
           {view === 'feedback' && (
             <FeedbackWindow 
@@ -100,16 +101,19 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
           )}
         </div>
 
+        {/* CONTENEDOR DEL WIZARD DE SIMULACIÓN */}
         {selectedSim && (
-          <SimulationWizard 
-            selectedSim={selectedSim} 
-            onClose={() => setSelectedSim(null)} 
-            onStartSimulation={(simType) => {
-              setActiveRoomData({ ...selectedSim, simType });
-              setSelectedSim(null);
-              setView('simulation');
-            }}
-          />
+          <div className="relative z-[9999]">
+            <SimulationWizard 
+              selectedSim={selectedSim} 
+              onClose={() => setSelectedSim(null)} 
+              onStartSimulation={(simType) => {
+                setActiveRoomData({ ...selectedSim, simType });
+                setSelectedSim(null);
+                setView('simulation');
+              }}
+            />
+          </div>
         )}
       </div>
     </MainLayout>
