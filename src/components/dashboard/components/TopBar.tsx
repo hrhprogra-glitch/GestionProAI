@@ -1,4 +1,4 @@
-import logo from '../../../assets/Logo-GestiónProAI.png';
+import logo from '../../../assets/Logo-GestiónProIA.png';
 
 interface TopBarProps {
   userName: string;
@@ -13,10 +13,10 @@ export default function TopBar({ userName, email, onLogout }: TopBarProps) {
       <div className="absolute -left-4 top-0 w-72 h-12 bg-gradient-to-r from-pink-500/20 to-cyan-500/20 blur-2xl rounded-full animate-pulse pointer-events-none" />
       
       <div className="flex items-center gap-5 relative z-10">
-        <img src={logo} alt="GestiónProAI Logo" className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(236,72,153,0.4)]" />
+        <img src={logo} alt="GestiónProIA Logo" className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(236,72,153,0.4)]" />
         <div>
           <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-500 tracking-tight drop-shadow-[0_2px_10px_rgba(236,72,153,0.15)]">
-            GestiónProAI
+            GestiónProIA
           </h1>
           <p className="text-sm sm:text-base font-semibold text-slate-600 dark:text-slate-400 mt-0.5">
             Optimización de Competencias Laborales mediante Inteligencia Artificial

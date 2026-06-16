@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../../../supabase';
-import logo from '../../../assets/Logo-GestiónProAI.png';
+import logo from '../../../assets/Logo-GestiónProIA.png';
 
 interface RegisterFormProps { onSwitchToLogin: () => void; }
 
@@ -29,7 +29,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       <div className="w-full max-w-[420px]">
         
         <div className="text-center mb-4">
-          <img src={logo} alt="GestiónProAI Logo" className="w-14 h-14 mx-auto mb-2 object-contain drop-shadow-[0_10px_20px_rgba(20,184,166,0.2)]" />
+          <img src={logo} alt="GestiónProIA Logo" className="w-14 h-14 mx-auto mb-2 object-contain drop-shadow-[0_10px_20px_rgba(20,184,166,0.2)]" />
           <h2 className="text-xl sm:text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-pink-500 to-amber-400 tracking-tight">
             Crea tu cuenta
           </h2>

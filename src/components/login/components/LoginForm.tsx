@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import logo from '../../../assets/Logo-GestiónProAI.png';
+import logo from '../../../assets/Logo-GestiónProIA.png';
 
 interface LoginFormProps {
   email: string; setEmail: (val: string) => void;
@@ -19,9 +19,9 @@ export function LoginForm({ email, setEmail, password, setPassword, rememberMe, 
       <div className="w-full max-w-md">
         
         <div className="text-center mb-8">
-          <img src={logo} alt="GestiónProAI Logo" className="w-20 h-20 mx-auto mb-3 object-contain drop-shadow-[0_10px_20px_rgba(147,51,234,0.2)]" />
+          <img src={logo} alt="GestiónProIA Logo" className="w-20 h-20 mx-auto mb-3 object-contain drop-shadow-[0_10px_20px_rgba(147,51,234,0.2)]" />
           <h2 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-500 tracking-tight">
-            GestiónProAI
+            GestiónProIA
           </h2>
           <p className="text-slate-600 dark:text-slate-300 mt-1 font-medium text-base">Potencia tu futuro profesional hoy</p>
         </div>

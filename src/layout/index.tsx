@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /**
- * MainLayout: Contenedor base de GestiónProAI
+ * MainLayout: Contenedor base de GestiónProIA
  * Organiza la barra lateral, la barra superior y el contenido dinámico.
  */
 export default function MainLayout({ children }: { children: ReactNode }) {
