@@ -1,5 +1,5 @@
 interface HomeModulesProps {
-  setView: (view: 'catalog' | 'feedback' | 'history') => void;
+  setView: (view: 'catalog' | 'performance') => void;
 }
 
 export default function HomeModules({ setView }: HomeModulesProps) {
@@ -15,21 +15,13 @@ export default function HomeModules({ setView }: HomeModulesProps) {
     },
     { 
       title: 'Feedback IA Inmediato', 
-      desc: 'Visualización analítica de tu score final, mapa de brechas críticas identificadas y acciones correctivas.', 
+      // Descripción simplificada, eliminando la redundancia analítica
+      desc: 'Mapa de brechas críticas identificadas y acciones correctivas estratégicas para optimizar tus competencias.', 
       badge: 'Módulo de Valor',
       auraColor: 'group-hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] group-hover:border-cyan-500/40',
       iconClass: 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-blue-600',
-      action: () => setView('feedback')
-    },
-    { 
-      title: 'Historial y Trazabilidad', 
-      desc: 'Almacenamiento continuo de tu evolución funcional para medir el incremento de tus competencias.', 
-      badge: 'SaaS Analytics',
-      auraColor: 'group-hover:shadow-[0_0_30px_rgba(245,158,11,0.35)] group-hover:border-amber-500/40',
-      iconClass: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]',
-      titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-600',
-      action: () => setView('history')
+      action: () => setView('performance')
     }
   ];
 
@@ -38,7 +30,7 @@ export default function HomeModules({ setView }: HomeModulesProps) {
       <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-6">
         Módulos Estratégicos de la Plataforma
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {modules.map((modulo, i) => (
           <div key={i} onClick={modulo.action} className={`group relative p-6 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 border border-white dark:border-slate-800/80 cursor-pointer shadow-sm transition-all duration-300 hover:-translate-y-1 ${modulo.auraColor}`}>
             <div className="flex justify-between items-start mb-4">

@@ -8,9 +8,8 @@ import LiquidBackground from './components/LiquidBackground';
 import TopBar from './components/TopBar';
 import HomeModules from './components/HomeModules';
 import CatalogWindow from './components/CatalogWindow';
-import FeedbackWindow from './components/FeedbackWindow';
-import HistoryWindow from './components/HistoryWindow';
 import ActiveSimulation from './components/ActiveSimulation';
+import PerformanceCenter from './components/PerformanceCenter';
 
 interface DashboardProps {
   userName: string;
@@ -20,12 +19,13 @@ interface DashboardProps {
 
 export default function Dashboard({ userName, email, onLogout }: DashboardProps) {
   const [showSplash, setShowSplash] = useState(true);
-  const [view, setView] = useState<'home' | 'catalog' | 'simulation' | 'feedback' | 'history'>('home');
+  
+  const [view, setView] = useState<'home' | 'catalog' | 'simulation' | 'performance'>('home');
   const [selectedSim, setSelectedSim] = useState<{role: string, type: string, diff: string} | null>(null);
   const [activeRoomData, setActiveRoomData] = useState<{role: string, type: string, diff: string, simType: string} | null>(null);
   
-  // Estado para transferir qué simulación quiere inspeccionar el usuario en el feedback
-  const [selectedFeedbackRole, setSelectedFeedbackRole] = useState<string | undefined>(undefined);
+  // Estado para controlar qué pestaña abrir por defecto al entrar al Performance Center
+  const [initialPerfTab, setInitialPerfTab] = useState<'history' | 'feedback'>('history');
 
   if (showSplash) {
     return <WelcomeSplash onComplete={() => setShowSplash(false)} />;
@@ -55,19 +55,22 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
 
       <div className="relative z-10 max-w-7xl mx-auto w-full space-y-6 px-4 sm:px-6 py-4 min-h-[90vh]">
         
-        {/* TOP BAR MODAL: Desaparece automáticamente en vistas internas. Se usa z-[999] para forzar la máxima prioridad */}
+        {/* TOP BAR MODAL */}
         {view === 'home' && (
           <div key="topbar" className="relative z-[999] anim-topbar pb-4">
             <TopBar userName={userName} email={email} onLogout={onLogout} />
           </div>
         )}
 
-        {/* CONTENEDOR DE RENDIMIENTO ANIMADO: Se usa z-10 para estar por debajo del TopBar */}
+        {/* CONTENEDOR DE RENDIMIENTO ANIMADO */}
         <div key={view} className="relative z-10 anim-cinematic">
           
           {view === 'home' && (
              <HomeModules setView={(targetView) => {
-               if (targetView === 'feedback') setSelectedFeedbackRole(undefined);
+               // Código limpio: Si eligen performance, por defecto abrimos la pestaña de feedback
+               if (targetView === 'performance') {
+                 setInitialPerfTab('feedback');
+               }
                setView(targetView);
              }} />
           )}
@@ -83,22 +86,14 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
             />
           )}
 
-          {view === 'feedback' && (
-            <FeedbackWindow 
+          {/* RENDERIZADO DEL NUEVO COMPONENTE UNIFICADO */}
+          {view === 'performance' && (
+            <PerformanceCenter 
               onBack={() => setView('home')} 
-              initialSim={selectedFeedbackRole} 
+              initialTab={initialPerfTab} 
             />
           )}
 
-          {view === 'history' && (
-            <HistoryWindow 
-              onBack={() => setView('home')} 
-              onViewReport={(role) => {
-                setSelectedFeedbackRole(role); // Setea el reporte objetivo
-                setView('feedback');           // Dispara la animación e inyección de datos
-              }} 
-            />
-          )}
         </div>
 
         {/* CONTENEDOR DEL WIZARD DE SIMULACIÓN */}
