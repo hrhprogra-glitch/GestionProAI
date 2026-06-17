@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 
-// Estructura actualizada con la rúbrica detallada
 export interface Rubric {
   estructura: number;
   claridad: number;
@@ -19,10 +18,11 @@ export interface EvaluationData {
 
 interface SimulationResultsProps {
   evaluation: EvaluationData | null;
+  audioUrl?: string | null; 
   onReturnHome: () => void;
 }
 
-export default function SimulationResults({ evaluation, onReturnHome }: SimulationResultsProps) {
+export default function SimulationResults({ evaluation, audioUrl, onReturnHome }: SimulationResultsProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
   };
 
   const handleDownloadPDF = () => {
-    window.print(); // Invoca el diálogo nativo de impresión/PDF del navegador
+    window.print(); 
   };
 
   const rubricLabels: Record<keyof Rubric, string> = {
@@ -57,10 +57,8 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
 
   return (
     <div className={`pt-4 animate-in duration-700 fade-in slide-in-from-bottom-8 ${show ? 'opacity-100' : 'opacity-0'} w-full max-w-4xl mx-auto`}>
-      {/* Añadimos clases print: para optimizar la vista al descargar como PDF */}
       <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-2xl relative overflow-hidden print:shadow-none print:border-none print:p-0 print:bg-white">
         
-        {/* Botones de acción superior (Ocultos en PDF) */}
         <div className="absolute top-8 right-8 flex gap-3 print:hidden z-20">
           <button 
             onClick={handleDownloadPDF}
@@ -71,7 +69,6 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
           </button>
         </div>
 
-        {/* Cabecera del Reporte */}
         <div className="text-center mb-10 relative z-10 print:mt-10">
           <div className="inline-block px-4 py-1.5 rounded-full bg-pink-100 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 text-xs font-black tracking-widest uppercase mb-4 print:bg-slate-100 print:text-slate-800">
             Reporte de Desempeño IA
@@ -83,7 +80,6 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
           
-          {/* Columna Izquierda: Score Global */}
           <div className="lg:col-span-1 flex flex-col items-center justify-center p-8 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-inner print:border-slate-300">
             <div className="relative flex items-center justify-center w-40 h-40">
               <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -104,9 +100,15 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
             <p className="mt-4 text-center text-sm font-bold text-slate-600 dark:text-slate-400 print:text-slate-600">
               Score Global de Competencia
             </p>
+
+            {audioUrl && (
+              <div className="mt-8 w-full print:hidden animate-in fade-in zoom-in duration-500">
+                <span className="text-[10px] uppercase font-bold text-slate-500 mb-2 block text-center">Tu grabación de la entrevista:</span>
+                <audio src={audioUrl} controls className="w-full h-10 rounded-xl" />
+              </div>
+            )}
           </div>
 
-          {/* Columna Derecha: Rúbrica Detallada */}
           <div className="lg:col-span-2 space-y-4 flex flex-col justify-center">
             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 print:text-slate-800">
               Desglose de Evaluación (Rúbrica)
@@ -132,7 +134,6 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
           </div>
         </div>
 
-        {/* Sección: Fortalezas y Brechas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 relative z-10">
           <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10 print:bg-white print:border-emerald-300">
             <h4 className="text-sm font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2 print:text-emerald-700">
@@ -140,11 +141,16 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
               Fortalezas Demostradas
             </h4>
             <ul className="space-y-2">
-              {evaluation.strengths.map((str, idx) => (
-                <li key={idx} className="text-slate-700 dark:text-slate-300 text-sm flex items-start gap-2 print:text-slate-800">
-                  <span className="text-emerald-500 font-bold">•</span> {str}
-                </li>
-              ))}
+              {/* SOLUCIÓN: Agregamos || [] por si la IA no devuelve strengths */}
+              {(evaluation.strengths || []).length > 0 ? (
+                (evaluation.strengths || []).map((str, idx) => (
+                  <li key={idx} className="text-slate-700 dark:text-slate-300 text-sm flex items-start gap-2 print:text-slate-800">
+                    <span className="text-emerald-500 font-bold">•</span> {str}
+                  </li>
+                ))
+              ) : (
+                <li className="text-slate-500 text-sm italic">Ninguna detectada.</li>
+              )}
             </ul>
           </div>
 
@@ -154,27 +160,30 @@ export default function SimulationResults({ evaluation, onReturnHome }: Simulati
               Brechas Detectadas
             </h4>
             <ul className="space-y-2">
-              {evaluation.weaknesses.map((wk, idx) => (
-                <li key={idx} className="text-slate-700 dark:text-slate-300 text-sm flex items-start gap-2 print:text-slate-800">
-                  <span className="text-amber-500 font-bold">•</span> {wk}
-                </li>
-              ))}
+              {/* SOLUCIÓN: Agregamos || [] por si la IA no devuelve weaknesses */}
+              {(evaluation.weaknesses || []).length > 0 ? (
+                (evaluation.weaknesses || []).map((wk, idx) => (
+                  <li key={idx} className="text-slate-700 dark:text-slate-300 text-sm flex items-start gap-2 print:text-slate-800">
+                    <span className="text-amber-500 font-bold">•</span> {wk}
+                  </li>
+                ))
+              ) : (
+                <li className="text-slate-500 text-sm italic">Ninguna detectada.</li>
+              )}
             </ul>
           </div>
         </div>
 
-        {/* Plan de Acción */}
         <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-500/10 dark:to-purple-500/10 border border-indigo-100 dark:border-indigo-500/20 relative z-10 print:bg-white print:border-indigo-300">
           <h4 className="text-sm font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-2 print:text-indigo-800">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             Plan de Acción Sugerido
           </h4>
           <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap print:text-slate-800">
-            {evaluation.actionPlan}
+            {evaluation.actionPlan || 'No se proporcionó un plan de acción.'}
           </p>
         </div>
 
-        {/* Botón de salida (Oculto en PDF) */}
         <div className="mt-10 flex justify-center relative z-10 print:hidden">
           <button 
             onClick={onReturnHome}

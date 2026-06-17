@@ -22,9 +22,10 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
   
   const [view, setView] = useState<'home' | 'catalog' | 'simulation' | 'performance'>('home');
   const [selectedSim, setSelectedSim] = useState<{role: string, type: string, diff: string} | null>(null);
-  const [activeRoomData, setActiveRoomData] = useState<{role: string, type: string, diff: string, simType: string} | null>(null);
   
-  // Estado para controlar qué pestaña abrir por defecto al entrar al Performance Center
+  // 1. NUEVO: Añadimos 'difficulty' al tipado del estado para que la sala sepa qué permisos pedir
+  const [activeRoomData, setActiveRoomData] = useState<{role: string, type: string, diff: string, simType: string, difficulty?: string} | null>(null);
+  
   const [initialPerfTab, setInitialPerfTab] = useState<'history' | 'feedback'>('history');
 
   if (showSplash) {
@@ -67,7 +68,6 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
           
           {view === 'home' && (
              <HomeModules setView={(targetView) => {
-               // Código limpio: Si eligen performance, por defecto abrimos la pestaña de feedback
                if (targetView === 'performance') {
                  setInitialPerfTab('feedback');
                }
@@ -86,7 +86,6 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
             />
           )}
 
-          {/* RENDERIZADO DEL NUEVO COMPONENTE UNIFICADO */}
           {view === 'performance' && (
             <PerformanceCenter 
               onBack={() => setView('home')} 
@@ -102,8 +101,9 @@ export default function Dashboard({ userName, email, onLogout }: DashboardProps)
             <SimulationWizard 
               selectedSim={selectedSim} 
               onClose={() => setSelectedSim(null)} 
-              onStartSimulation={(simType) => {
-                setActiveRoomData({ ...selectedSim, simType });
+              // 2. NUEVO: Capturamos el parámetro difficulty y lo guardamos
+              onStartSimulation={(simType, difficulty) => {
+                setActiveRoomData({ ...selectedSim, simType, difficulty });
                 setSelectedSim(null);
                 setView('simulation');
               }}
