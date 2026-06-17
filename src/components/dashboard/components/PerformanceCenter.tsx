@@ -29,7 +29,7 @@ export default function PerformanceCenter({ onBack, initialTab = 'history' }: Pe
             const rubric = fb.rubric || {};
             
             return {
-              id: item.id.toString(),
+              id: item.id.toString(), // ID necesario para borrar
               role: item.role,
               type: item.difficulty,
               date: new Date(item.created_at).toLocaleDateString(),
@@ -60,6 +60,37 @@ export default function PerformanceCenter({ onBack, initialTab = 'history' }: Pe
   const handleViewReport = (index: number) => {
     setSelectedIdx(index);
     setActiveTab('feedback');
+  };
+
+  // NUEVO: Función para eliminar un reporte
+  const handleDeleteReport = async (id: string) => {
+    // Confirmación de seguridad
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este reporte de forma permanente?")) {
+      return;
+    }
+
+    try {
+      // 1. Borramos de Supabase
+      const { error } = await supabase
+        .from('history')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // 2. Actualizamos el estado local para que desaparezca al instante
+      setReports(prevReports => prevReports.filter(report => report.id !== id));
+      
+      // Si borramos el reporte que estábamos viendo, regresamos al historial
+      if (reports[selectedIdx]?.id === id) {
+        setSelectedIdx(0);
+        setActiveTab('history');
+      }
+
+    } catch (err: any) {
+      alert("Error al eliminar el reporte: " + err.message);
+      console.error(err);
+    }
   };
 
   if (isLoading) {
@@ -124,7 +155,7 @@ export default function PerformanceCenter({ onBack, initialTab = 'history' }: Pe
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-700 dark:text-slate-300">
               {reports.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
+                <tr key={row.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="p-4 font-black text-slate-900 dark:text-white">{row.role}</td>
                   <td className="p-4">
                     <span className="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
@@ -133,13 +164,25 @@ export default function PerformanceCenter({ onBack, initialTab = 'history' }: Pe
                   </td>
                   <td className="p-4 text-slate-400">{row.date}</td>
                   <td className="p-4 text-center font-black text-slate-900 dark:text-white text-sm">{row.score}%</td>
-                  <td className="p-4 text-center">
-                    <button 
-                      onClick={() => handleViewReport(idx)}
-                      className="px-3 py-1.5 font-black text-white bg-slate-900 dark:bg-slate-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600 rounded-xl transition-all shadow-sm"
-                    >
-                      Analizar IA
-                    </button>
+                  <td className="p-4">
+                    {/* NUEVO: Contenedor con los botones de Analizar y Eliminar */}
+                    <div className="flex justify-center items-center gap-2">
+                      <button 
+                        onClick={() => handleViewReport(idx)}
+                        className="px-3 py-1.5 font-black text-white bg-slate-900 dark:bg-slate-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600 rounded-xl transition-all shadow-sm"
+                      >
+                        Analizar IA
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteReport(row.id)}
+                        title="Eliminar Reporte"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -152,8 +195,6 @@ export default function PerformanceCenter({ onBack, initialTab = 'history' }: Pe
       {activeTab === 'feedback' && currentReport && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10 animate-in fade-in slide-in-from-bottom-2">
           
-          {/* Se eliminó el selector <select> redundante que estaba en esta sección */}
-
           <div className="space-y-6 bg-slate-50/60 dark:bg-slate-950/40 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/80">
             <div className="text-center space-y-2">
               <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 uppercase tracking-wider border border-cyan-500/20">
