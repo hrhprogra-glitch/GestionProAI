@@ -159,44 +159,45 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
   return (
     <div className="pt-2 animate-in zoom-in-95 fade-in duration-500 fill-mode-forwards relative h-[85vh] flex flex-col lg:flex-row gap-6">
       
-      <div className="flex-1 p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-xl border border-teal-500/30 flex flex-col">
-        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+      {/* Panel Principal - Glassmorphism Oscuro */}
+      <div className="flex-1 p-6 sm:p-8 rounded-3xl bg-slate-900/60 dark:bg-slate-900/70 backdrop-blur-2xl border border-teal-500/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col">
+        <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
           <div>
-            <h3 className="text-xl font-black">Simulación: {simData.role}</h3>
-            <p className="text-xs font-bold text-slate-500 mt-1">Nivel: {actualDifficulty}</p>
+            <h3 className="text-xl font-black text-white">Simulación: {simData.role}</h3>
+            <p className="text-xs font-bold text-teal-400 mt-1 tracking-widest uppercase">Nivel: {actualDifficulty}</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border font-mono font-bold">
+            <div className="px-4 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 font-mono font-bold text-teal-300 shadow-inner">
               {formatTime(timeLeft)}
             </div>
-            <button onClick={() => handleFinishSimulation()} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-red-600 transition-colors">
+            <button onClick={() => handleFinishSimulation()} className="px-4 py-2 bg-slate-800/80 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold hover:bg-red-500/90 hover:text-white hover:border-red-500 transition-all duration-300">
               Finalizar Sesión
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 space-y-6 pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+        <div className="flex-1 overflow-y-auto py-6 space-y-6 pr-2 scrollbar-thin scrollbar-thumb-slate-600">
           {messages.filter(m => m.role !== 'system').map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] p-4 rounded-2xl ${msg.role === 'user' ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-800'}`}>
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              <div className={`max-w-[75%] p-4 rounded-2xl backdrop-blur-md border shadow-lg ${msg.role === 'user' ? 'bg-teal-600/90 text-white border-teal-500/50' : 'bg-slate-800/80 text-slate-200 border-slate-700/50'}`}>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
               </div>
             </div>
           ))}
-          {isLoading && <div className="text-teal-500 animate-pulse text-sm font-bold">La IA está analizando tu respuesta...</div>}
+          {isLoading && <div className="text-teal-400 animate-pulse text-sm font-bold tracking-wider">La IA está procesando la telemetría...</div>}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="pt-4 border-t border-slate-700/50">
           {isMultimodal ? (
-            <div className="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl">
+            <div className="flex flex-col items-center gap-3 p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30">
               <div className="flex gap-4">
-                <button onClick={toggleRecording} disabled={isLoading} className={`px-6 py-2 rounded-xl text-white font-bold transition-all shadow-md ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                <button onClick={toggleRecording} disabled={isLoading} className={`px-6 py-2 rounded-xl text-white font-bold transition-all shadow-md backdrop-blur-md border ${isRecording ? 'bg-red-500/90 animate-pulse border-red-400' : 'bg-slate-800 border-slate-600 hover:bg-slate-700'}`}>
                   {isRecording ? '⏹ Detener Grabación' : '🎤 Grabar Respuesta'}
                 </button>
                 
                 {hasRecordedAudio && !isRecording && (
-                  <button onClick={handleSendAudioAnswer} className="px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:scale-105 text-white font-black rounded-xl animate-in zoom-in shadow-lg">
+                  <button onClick={handleSendAudioAnswer} className="px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:scale-105 text-white font-black rounded-xl animate-in zoom-in shadow-[0_0_15px_rgba(20,184,166,0.5)] border border-teal-400/50">
                     Enviar Respuesta a la IA →
                   </button>
                 )}
@@ -204,8 +205,15 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
             </div>
           ) : (
             <form onSubmit={handleSendMessage} className="flex relative">
-              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} disabled={isLoading} className="w-full p-4 rounded-2xl border text-sm pr-20" placeholder="Escribe tu respuesta aquí..." />
-              <button type="submit" disabled={!input.trim() || isLoading} className="absolute right-2 top-2 bottom-2 bg-teal-500 px-4 rounded-xl text-white font-bold hover:bg-teal-600 disabled:opacity-50">
+              <input 
+                type="text" 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                disabled={isLoading} 
+                className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-800/60 text-white text-sm pr-20 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all backdrop-blur-md shadow-inner" 
+                placeholder="Escribe tu respuesta aquí..." 
+              />
+              <button type="submit" disabled={!input.trim() || isLoading} className="absolute right-2 top-2 bottom-2 bg-teal-600/90 px-4 rounded-xl text-white font-bold hover:bg-teal-500 disabled:opacity-50 transition-colors backdrop-blur-md border border-teal-500/50">
                 Enviar
               </button>
             </form>
@@ -213,21 +221,21 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
         </div>
       </div>
 
-      {/* PANEL DERECHO (SCROLLABLE EN PANTALLAS PEQUEÑAS) */}
+      {/* PANEL DERECHO - Glassmorphism Oscuro */}
       {isMultimodal && (
         <div className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pb-2 scrollbar-none">
-          <div className="bg-white/90 p-6 rounded-3xl border shadow-xl shrink-0">
-            <h4 className="font-black mb-4">Cámara Activa</h4>
+          <div className="bg-slate-900/60 backdrop-blur-2xl p-6 rounded-3xl border border-slate-700/50 shadow-[0_0_40px_rgba(0,0,0,0.5)] shrink-0">
+            <h4 className="font-black mb-4 text-white">Cámara Activa</h4>
             <MediaRecorderUI isRecording={isRecording} onMediaReady={handleMediaReady} onError={(e) => alert(e)} />
           </div>
           
           {isAdvanced && (
-            <div className="bg-white/90 p-6 rounded-3xl border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col shrink-0 min-h-[300px]">
-              <h4 className="font-black mb-2 text-purple-600">Documentos de Respaldo</h4>
-              <p className="text-[10px] text-slate-500 font-semibold mb-4 leading-relaxed">
+            <div className="bg-slate-900/60 backdrop-blur-2xl p-6 rounded-3xl border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col shrink-0 min-h-[300px]">
+              <h4 className="font-black mb-2 text-purple-400">Documentos de Respaldo</h4>
+              <p className="text-[10px] text-slate-400 font-semibold mb-4 leading-relaxed">
                 Añade todos los PDFs que requieras para justificar tus respuestas.
               </p>
-              <div className="flex-1 w-full">
+              <div className="flex-1 w-full filter drop-shadow-md">
                 <DocumentUploader onFilesUpdated={setDocumentFiles} />
               </div>
             </div>
