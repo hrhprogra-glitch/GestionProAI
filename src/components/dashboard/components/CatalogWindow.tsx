@@ -6,12 +6,12 @@ interface CatalogWindowProps {
 }
 
 export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProps) {
-  // Asignamos una identidad visual permanente de marca a cada simulación basada en tu PPT
+  // Asignamos una identidad visual permanente de marca a cada simulación y marcamos todos los niveles
   const sims = [
     { 
       role: 'Análisis de Operaciones y Procesos', 
       type: 'Ingeniería / Trainee', 
-      diff: 'Intermedio',
+      diff: 'Básico, Intermedio, Avanzado',
       borderClass: 'border-pink-500/30 dark:border-pink-500/20 shadow-[0_4px_20px_rgba(236,72,153,0.05)] hover:shadow-[0_0_30px_rgba(236,72,153,0.25)] hover:border-pink-500/50',
       badgeClass: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600',
@@ -20,7 +20,7 @@ export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProp
     { 
       role: 'Gestión Estratégica y Finanzas', 
       type: 'Negocios / Prácticas', 
-      diff: 'Avanzado',
+      diff: 'Básico, Intermedio, Avanzado',
       borderClass: 'border-cyan-500/30 dark:border-cyan-500/20 shadow-[0_4px_20px_rgba(6,182,212,0.05)] hover:shadow-[0_0_30px_rgba(6,182,212,0.25)] hover:border-cyan-500/50',
       badgeClass: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-blue-600',
@@ -29,7 +29,7 @@ export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProp
     { 
       role: 'Dirección Comercial y Administración', 
       type: 'Negocios / Trainee', 
-      diff: 'Intermedio',
+      diff: 'Básico, Intermedio, Avanzado',
       borderClass: 'border-amber-500/30 dark:border-amber-500/20 shadow-[0_4px_20px_rgba(245,158,11,0.05)] hover:shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:border-amber-500/50',
       badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-600',
@@ -38,7 +38,7 @@ export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProp
     { 
       role: 'Evaluación de Proyectos de Inversión', 
       type: 'Ingeniería y Negocios', 
-      diff: 'Avanzado',
+      diff: 'Básico, Intermedio, Avanzado',
       borderClass: 'border-pink-500/30 dark:border-cyan-500/20 shadow-[0_4px_20px_rgba(236,72,153,0.05)] hover:shadow-[0_0_30px_rgba(236,72,153,0.25)] hover:border-purple-500/50',
       badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-cyan-500',
@@ -47,7 +47,7 @@ export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProp
     { 
       role: 'Logística y Cadena de Suministros', 
       type: 'Operaciones / Remoto', 
-      diff: 'Intermedio',
+      diff: 'Básico, Intermedio, Avanzado',
       borderClass: 'border-amber-500/30 dark:border-cyan-500/20 shadow-[0_4px_20px_rgba(245,158,11,0.05)] hover:shadow-[0_0_30px_rgba(245,158,11,0.25)] hover:border-orange-500/50',
       badgeClass: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
       titleClass: 'bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-cyan-500',
@@ -102,26 +102,33 @@ export default function CatalogWindow({ onBack, onSelectSim }: CatalogWindowProp
           {sims.map((sim, i) => (
             <div 
               key={i} 
-              className={`p-5 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 border text-left shadow-sm hover:-translate-y-1 transition-all duration-300 group ${sim.borderClass}`}
+              className={`p-5 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 border text-left shadow-sm hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between ${sim.borderClass}`}
             >
-              <span className={`text-[11px] font-bold px-2 py-1 rounded-md border inline-block mb-3 ${sim.badgeClass}`}>
-                {sim.type}
-              </span>
-              
-              {/* Título de la simulación a color permanente */}
-              <h4 className={`text-base font-black mb-2 leading-snug ${sim.titleClass}`}>
-                {sim.role}
-              </h4>
-              
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Dificultad: <span className="text-slate-700 dark:text-slate-300">{sim.diff}</span>
+              <div>
+                <span className={`text-[11px] font-bold px-2 py-1 rounded-md border inline-block mb-3 ${sim.badgeClass}`}>
+                  {sim.type}
                 </span>
+                
+                {/* Título de la simulación a color permanente */}
+                <h4 className={`text-base font-black mb-2 leading-snug ${sim.titleClass}`}>
+                  {sim.role}
+                </h4>
+              </div>
+              
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">
+                    Niveles Disponibles:
+                  </span>
+                  <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold mt-0.5">
+                    {sim.diff}
+                  </span>
+                </div>
                 
                 {/* Botón a color permanente con sombra energética */}
                 <button 
                   onClick={() => onSelectSim({ role: sim.role, type: sim.type, diff: sim.diff })} 
-                  className={`text-xs font-black text-white px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md ${sim.btnClass}`}
+                  className={`text-xs font-black text-white px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md shrink-0 ${sim.btnClass}`}
                 >
                   Iniciar Sala
                 </button>
