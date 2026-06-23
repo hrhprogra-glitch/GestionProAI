@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 interface SimulationWizardProps {
   selectedSim: { role: string; type: string; diff: string };
-  userPlan: string; // NUEVO: Recibimos el plan actual del usuario
+  userPlan: string;
   onClose: () => void;
   onStartSimulation: (simType: string, difficulty: string) => void;
 }
@@ -12,19 +12,27 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
   const [simType, setSimType] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<string | null>(null);
 
-  // LÓGICA DE RESTRICCIÓN SEGÚN EL PLAN
+  // 1. Análisis y Modificación: Actualizamos la lógica de bloqueo con los nuevos planes
   const isLocked = (nivel: string) => {
-    if (userPlan === 'Plan Élite') return false; // Élite tiene acceso a todo
-    if (userPlan === 'Plan Profesional') {
-      return nivel === 'Avanzado'; // Profesional solo bloquea Avanzado
+    // El nivel básico siempre está desbloqueado para todos
+    if (nivel === 'Básico') return false; 
+    
+    // El Plan Pro tiene acceso ilimitado a todos los niveles
+    if (userPlan === 'Plan Pro') return false; 
+    
+    // Los planes Estudiante y Express tienen acceso a Básico e Intermedio
+    if (userPlan === 'Plan Estudiante' || userPlan === 'Pack Express') {
+      return nivel === 'Avanzado'; // Solo se les bloquea el Avanzado
     }
-    // Si no es Élite ni Profesional (Gestión Gratis), bloquea Intermedio y Avanzado
+    
+    // Para usuarios gratuitos o sin plan reconocido, bloqueamos Intermedio y Avanzado
     return nivel === 'Intermedio' || nivel === 'Avanzado'; 
   };
 
+  // 2. Ajustamos los mensajes de recomendación de actualización de plan
   const getRequiredPlan = (nivel: string) => {
-    if (nivel === 'Avanzado') return 'Plan Élite';
-    if (nivel === 'Intermedio') return 'Plan Profesional';
+    if (nivel === 'Avanzado') return 'Plan Pro';
+    if (nivel === 'Intermedio') return 'Plan Estudiante o Express';
     return '';
   };
 
@@ -72,7 +80,7 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
           </div>
         )}
 
-        {/* Paso 2: Selección de Dificultad (CON RESTRICCIONES) */}
+        {/* Paso 2: Selección de Dificultad */}
         {step === 2 && (
           <div className="animate-in slide-in-from-right-4 duration-300">
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-4">
@@ -92,7 +100,7 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
                     key={item.nivel}
                     onClick={() => {
                       if (locked) {
-                        alert(`Debes mejorar tu cuenta al ${requiredPlan} para acceder al nivel ${item.nivel}. Ve a "Mejorar Plan" en el menú superior.`);
+                        alert(`Tu plan actual (${userPlan || 'Gratis'}) no permite esto. Debes adquirir el ${requiredPlan} para acceder al nivel ${item.nivel}.`);
                         return; // Bloquea el avance
                       }
                       setDifficulty(item.nivel);
@@ -127,9 +135,9 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
                     
                     {/* Etiqueta visual de plan requerido */}
                     {locked && (
-                      <div className="absolute top-3 right-10 flex items-center">
+                      <div className="absolute top-3 right-4 flex items-center">
                         <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 py-0.5 px-2 rounded-md border border-amber-500/20">
-                          {requiredPlan.replace('Plan ', '')}
+                          Requiere {requiredPlan.replace('Plan ', '')}
                         </span>
                       </div>
                     )}
@@ -140,16 +148,17 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
           </div>
         )}
 
-        {/* Paso 3 y 4 se mantienen igual */}
+        {/* Paso 3: Carga */}
         {step === 3 && (
           <div className="flex flex-col items-center justify-center py-8 animate-in zoom-in-95 duration-300">
             <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-teal-500 rounded-full animate-spin mb-4"></div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 text-center">
-              Paso 3: Verificando plan activo y preparando el entorno...
+              Paso 3: Verificando plan {userPlan} y preparando el entorno...
             </p>
           </div>
         )}
 
+        {/* Paso 4: Confirmación */}
         {step === 4 && (
           <div className="flex flex-col items-center justify-center py-6 animate-in zoom-in-95 duration-300">
             <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-4">

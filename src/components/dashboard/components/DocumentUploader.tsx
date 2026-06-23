@@ -1,13 +1,18 @@
 import { useState, useRef } from 'react';
 
+// 1. Análisis: Agregamos la propiedad activePlan para leer los permisos del usuario
 interface DocumentUploaderProps {
   onFilesUpdated: (files: File[]) => void;
+  activePlan?: string | null;
 }
 
-export default function DocumentUploader({ onFilesUpdated }: DocumentUploaderProps) {
+export default function DocumentUploader({ onFilesUpdated, activePlan }: DocumentUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Verificamos si el usuario tiene privilegios Pro
+  const isPro = activePlan === 'Plan Pro';
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(true);
@@ -17,12 +22,28 @@ export default function DocumentUploader({ onFilesUpdated }: DocumentUploaderPro
     e.preventDefault(); setIsDragging(false);
   };
 
+  // 2. Modificación: Lógica de filtrado inteligente basado en la suscripción
   const processFiles = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(f => f.type === 'application/pdf');
+    
+    const validFiles = fileArray.filter(f => {
+      const fileName = f.name.toLowerCase();
+      // Siempre permitimos PDF
+      if (f.type === 'application/pdf' || fileName.endsWith('.pdf')) return true;
+      
+      // Si es Plan Pro, desbloqueamos las extensiones avanzadas
+      if (isPro) {
+        return fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+               fileName.endsWith('.docx') || fileName.endsWith('.doc') || 
+               fileName.endsWith('.pbix');
+      }
+      return false; // Bloquea si no es PDF y no tiene Plan Pro
+    });
     
     if (validFiles.length !== fileArray.length) {
-      alert('⚠️ Solo se permiten archivos PDF. Los demás formatos han sido ignorados.');
+      alert(isPro 
+        ? '⚠️ Solo se permiten archivos PDF, Excel, Word y PowerBI. Los demás formatos han sido ignorados.'
+        : '⚠️ Solo se permiten archivos PDF. Adquiere el Plan Pro para habilitar Excel, Word y PowerBI.');
     }
     
     if (validFiles.length > 0) {
@@ -63,12 +84,19 @@ export default function DocumentUploader({ onFilesUpdated }: DocumentUploaderPro
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={(e) => {
-        // Evita abrir la ventana de archivos si el usuario hizo clic en el botón de eliminar (X)
         if ((e.target as HTMLElement).closest('button')) return;
         fileInputRef.current?.click();
       }}
     >
-      <input type="file" ref={fileInputRef} onChange={handleChange} accept=".pdf" multiple className="hidden" />
+      {/* 3. El atributo accept del input nativo ahora responde al plan */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleChange} 
+        accept={isPro ? ".pdf,.xlsx,.xls,.docx,.doc,.pbix" : ".pdf"} 
+        multiple 
+        className="hidden" 
+      />
 
       {selectedFiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center pointer-events-none">
@@ -77,8 +105,10 @@ export default function DocumentUploader({ onFilesUpdated }: DocumentUploaderPro
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Añadir PDFs de Respaldo</p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Haz clic o arrastra los archivos aquí</p>
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Añadir Documentos de Respaldo</p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+            {isPro ? 'Haz clic para subir PDF, Excel, Word o PowerBI' : 'Haz clic o arrastra tus PDFs aquí'}
+          </p>
         </div>
       ) : (
         <div className="w-full h-full flex flex-col">
@@ -100,7 +130,7 @@ export default function DocumentUploader({ onFilesUpdated }: DocumentUploaderPro
                 <button 
                   onClick={(e) => removeFile(idx, e)}
                   className="text-slate-400 hover:text-red-500 transition-colors p-1 bg-slate-100 dark:bg-slate-800 rounded-md shrink-0"
-                  title="Eliminar PDF"
+                  title="Eliminar archivo"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>

@@ -27,6 +27,17 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecordedAudio, setHasRecordedAudio] = useState(false);
 
+  // 1. SOLUCIÓN: Leemos el plan exactamente de donde lo guarda tu Dashboard actual
+  let userPlan = 'Gestión Gratis';
+  try {
+    const savedUser = localStorage.getItem('remembered_user');
+    if (savedUser) {
+      userPlan = JSON.parse(savedUser).plan || 'Gestión Gratis';
+    }
+  } catch (e) {
+    console.error("Error leyendo el plan:", e);
+  }
+
   const actualDifficulty = simData.difficulty || simData.diff;
   const isMultimodal = actualDifficulty === 'Intermedio' || actualDifficulty === 'Avanzado';
   const isAdvanced = actualDifficulty === 'Avanzado';
@@ -72,7 +83,7 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
 
     const initSimulation = async () => {
       const advancedRule = isAdvanced 
-        ? "REGLA OBLIGATORIA: Eres libre de pedirle al candidato que suba documentos PDF (ej: diagramas, análisis) en diferentes preguntas. Dile explícitamente: 'Adjunta tu resolución en PDF a la plataforma y explícamela por voz'." 
+        ? "REGLA OBLIGATORIA: Eres libre de pedirle al candidato que suba documentos en diferentes preguntas. Dile explícitamente: 'Adjunta tu resolución a la plataforma y explícamela por voz'." 
         : "";
 
       const systemPrompt: Message = {
@@ -97,6 +108,12 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
     const timer = setInterval(() => setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (timeLeft === 0 && !isFinishing) {
+      handleFinishSimulation();
+    }
+  }, [timeLeft, isFinishing]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -159,7 +176,6 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
   return (
     <div className="pt-2 animate-in zoom-in-95 fade-in duration-500 fill-mode-forwards relative h-[85vh] flex flex-col lg:flex-row gap-6">
       
-      {/* Panel Principal - Glassmorphism Oscuro */}
       <div className="flex-1 p-6 sm:p-8 rounded-3xl bg-slate-900/60 dark:bg-slate-900/70 backdrop-blur-2xl border border-teal-500/20 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col">
         <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
           <div>
@@ -167,7 +183,7 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
             <p className="text-xs font-bold text-teal-400 mt-1 tracking-widest uppercase">Nivel: {actualDifficulty}</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="px-4 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 font-mono font-bold text-teal-300 shadow-inner">
+            <div className={`px-4 py-1.5 rounded-lg border font-mono font-bold shadow-inner transition-colors ${timeLeft <= 60 ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse' : 'bg-slate-800/80 border-slate-700/50 text-teal-300'}`}>
               {formatTime(timeLeft)}
             </div>
             <button onClick={() => handleFinishSimulation()} className="px-4 py-2 bg-slate-800/80 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold hover:bg-red-500/90 hover:text-white hover:border-red-500 transition-all duration-300">
@@ -192,7 +208,7 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
           {isMultimodal ? (
             <div className="flex flex-col items-center gap-3 p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30">
               <div className="flex gap-4">
-                <button onClick={toggleRecording} disabled={isLoading} className={`px-6 py-2 rounded-xl text-white font-bold transition-all shadow-md backdrop-blur-md border ${isRecording ? 'bg-red-500/90 animate-pulse border-red-400' : 'bg-slate-800 border-slate-600 hover:bg-slate-700'}`}>
+                <button onClick={toggleRecording} disabled={isLoading || timeLeft === 0} className={`px-6 py-2 rounded-xl text-white font-bold transition-all shadow-md backdrop-blur-md border ${isRecording ? 'bg-red-500/90 animate-pulse border-red-400' : 'bg-slate-800 border-slate-600 hover:bg-slate-700'}`}>
                   {isRecording ? '⏹ Detener Grabación' : '🎤 Grabar Respuesta'}
                 </button>
                 
@@ -209,11 +225,11 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
                 type="text" 
                 value={input} 
                 onChange={(e) => setInput(e.target.value)} 
-                disabled={isLoading} 
-                className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-800/60 text-white text-sm pr-20 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all backdrop-blur-md shadow-inner" 
-                placeholder="Escribe tu respuesta aquí..." 
+                disabled={isLoading || timeLeft === 0} 
+                className="w-full p-4 rounded-2xl border border-slate-700/50 bg-slate-800/60 text-white text-sm pr-20 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all backdrop-blur-md shadow-inner disabled:opacity-50" 
+                placeholder={timeLeft === 0 ? "Tiempo agotado" : "Escribe tu respuesta aquí..."} 
               />
-              <button type="submit" disabled={!input.trim() || isLoading} className="absolute right-2 top-2 bottom-2 bg-teal-600/90 px-4 rounded-xl text-white font-bold hover:bg-teal-500 disabled:opacity-50 transition-colors backdrop-blur-md border border-teal-500/50">
+              <button type="submit" disabled={!input.trim() || isLoading || timeLeft === 0} className="absolute right-2 top-2 bottom-2 bg-teal-600/90 px-4 rounded-xl text-white font-bold hover:bg-teal-500 disabled:opacity-50 transition-colors backdrop-blur-md border border-teal-500/50">
                 Enviar
               </button>
             </form>
@@ -221,7 +237,6 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
         </div>
       </div>
 
-      {/* PANEL DERECHO - Glassmorphism Oscuro */}
       {isMultimodal && (
         <div className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pb-2 scrollbar-none">
           <div className="bg-slate-900/60 backdrop-blur-2xl p-6 rounded-3xl border border-slate-700/50 shadow-[0_0_40px_rgba(0,0,0,0.5)] shrink-0">
@@ -233,10 +248,11 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
             <div className="bg-slate-900/60 backdrop-blur-2xl p-6 rounded-3xl border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col shrink-0 min-h-[300px]">
               <h4 className="font-black mb-2 text-purple-400">Documentos de Respaldo</h4>
               <p className="text-[10px] text-slate-400 font-semibold mb-4 leading-relaxed">
-                Añade todos los PDFs que requieras para justificar tus respuestas.
+                Añade todos los archivos (PDF, Excel, Word, PowerBI) que requieras.
               </p>
               <div className="flex-1 w-full filter drop-shadow-md">
-                <DocumentUploader onFilesUpdated={setDocumentFiles} />
+                {/* 2. SOLUCIÓN: Enviamos el plan correctamente extraído */}
+                <DocumentUploader onFilesUpdated={setDocumentFiles} activePlan={userPlan} />
               </div>
             </div>
           )}
