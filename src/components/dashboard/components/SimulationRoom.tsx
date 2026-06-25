@@ -81,7 +81,7 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
     if (initRef.current) return;
     initRef.current = true;
 
-    // BASE DE DATOS DE PREGUNTAS (Extraídas de tu Excel)
+    // BASE DE DATOS DE PREGUNTAS ACTUALIZADA (3 Básico, 4 Intermedio, 5 Avanzado)
     const QUESTIONS_DB: Record<string, Record<string, string[]>> = {
       'Análisis de Operaciones y Procesos': {
         'Básico': [
@@ -91,66 +91,96 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
         ],
         'Intermedio': [
           "Explica qué es el análisis de causa raíz. ¿Cómo aplicarías un diagrama de Ishikawa a un problema de calidad?",
-          "¿Qué es la metodología PDCA y en qué contexto la utilizarías?"
+          "¿Qué es la metodología PDCA y en qué contexto la utilizarías?",
+          "¿Cómo calcularías el tiempo de ciclo de un proceso y qué harías si este supera el tiempo takt?",
+          "¿Qué métricas utilizarías para evaluar la capacidad de un proceso y cómo interpretarías un Cp y Cpk menores a 1?"
         ],
         'Avanzado': [
-          "Si detectas un cuello de botella en la atención al cliente, ¿cómo diseñarías una propuesta de mejora? ¿Qué datos necesitarías?"
+          "Si detectas un cuello de botella en la atención al cliente, ¿cómo diseñarías una propuesta de mejora? ¿Qué datos necesitarías?",
+          "Explica cómo aplicarías la filosofía Lean Six Sigma para reducir la variabilidad en una línea de ensamblaje automatizada.",
+          "¿Cómo gestionarías la resistencia al cambio en el equipo de operaciones al implementar un nuevo sistema ERP?",
+          "Describe un escenario donde implementarías reingeniería de procesos (BPR) en lugar de mejora continua. ¿Cuáles serían los riesgos principales?",
+          "Si se te pide reducir los costos operativos en un 15% sin afectar la calidad del producto final, ¿qué marco de análisis seguirías y por dónde empezarías?"
         ]
       },
       'Gestión Estratégica y Finanzas': {
         'Básico': [
           "¿Qué es un Estado de Resultados (EERR) y qué diferencia tiene con un Flujo de Caja?",
-          "¿Qué entiendes por punto de equilibrio (break-even)? ¿Cómo se calcula?"
+          "¿Qué entiendes por punto de equilibrio (break-even)? ¿Cómo se calcula?",
+          "¿Cuáles son las diferencias principales entre los costos fijos y los costos variables dentro de una empresa?"
         ],
         'Intermedio': [
           "¿Qué es el VAN y la TIR? ¿Cuándo un proyecto es financieramente viable según estos indicadores?",
-          "Explica qué es el WACC o COK y para qué se usa en la evaluación de proyectos."
+          "Explica qué es el WACC o COK y para qué se usa en la evaluación de proyectos.",
+          "¿Cómo analizarías el capital de trabajo de una empresa y qué medidas tomarías si este resulta negativo recurrentemente?",
+          "¿Qué es el EBITDA y por qué es una métrica tan utilizada para comparar el desempeño operativo entre empresas del mismo sector?"
         ],
         'Avanzado': [
           "Si recibes los estados financieros de una empresa, ¿qué ratios calcularías primero para un diagnóstico rápido?",
-          "¿Cómo construirías un modelo de proyección financiera a 5 años para una startup SaaS? ¿Qué supuestos serían críticos?"
+          "¿Cómo construirías un modelo de proyección financiera a 5 años para una startup SaaS? ¿Qué supuestos serían críticos?",
+          "En un contexto de alta inflación y volatilidad cambiaria, ¿cómo ajustarías tu planeamiento financiero y estratégico anual?",
+          "Explica cómo evaluarías una posible fusión o adquisición (M&A). ¿Qué métodos de valoración de empresas utilizarías y por qué?",
+          "Si el directorio te exige aumentar el ROE (Return on Equity) de la compañía sin emitir nuevas acciones, ¿qué estrategias operativas y financieras propondrías?"
         ]
       },
       'Dirección Comercial y Administración': {
         'Básico': [
           "¿Qué diferencia hay entre ventas y marketing? ¿Cómo trabajan juntos en una empresa?",
-          "¿Qué es un CRM y para qué lo usaría un equipo comercial?"
+          "¿Qué es un CRM y para qué lo usaría un equipo comercial?",
+          "¿Cuáles son las etapas principales del embudo de ventas o 'sales funnel'?"
         ],
         'Intermedio': [
           "Describe cómo diseñarías un plan de ventas para un producto SaaS dirigido a empresas medianas en Perú.",
-          "¿Cómo manejarías una situación en la que un cliente importante amenaza con cancelar el contrato?"
+          "¿Cómo manejarías una situación en la que un cliente importante amenaza con cancelar el contrato?",
+          "¿Qué estrategias de fidelización implementarías para aumentar el valor de vida del cliente (CLV)?",
+          "Explica las diferencias entre un modelo de ventas B2B y B2C. ¿Cómo cambia el ciclo de decisión de compra en cada uno?"
         ],
         'Avanzado': [
           "¿Cómo estructurarías los KPIs de un equipo comercial de 5 personas? ¿Qué métricas serían no negociables?",
-          "Si la tasa de churn sube al 15% mensual, ¿qué análisis harías y qué acciones tomarías de inmediato?"
+          "Si la tasa de churn sube al 15% mensual, ¿qué análisis harías y qué acciones tomarías de inmediato?",
+          "¿Cómo diseñarías un esquema de compensación y comisiones variable que motive al equipo sin afectar gravemente los márgenes de la empresa?",
+          "Imagina que entras a un nuevo mercado internacional donde la marca es desconocida. ¿Cuál sería tu estrategia de penetración (Go-to-Market) para los primeros 6 meses?",
+          "Si la cuota de mercado está cayendo debido a una agresiva guerra de precios iniciada por la competencia, ¿cómo defenderías el posicionamiento sin destruir el valor del producto?"
         ]
       },
       'Evaluación de Proyectos de Inversión': {
         'Básico': [
           "¿Qué es el VAN (Valor Actual Neto) y cuál es la regla de decisión para aceptar un proyecto?",
-          "¿Cuál es la diferencia entre flujo de caja económico y flujo de caja financiero?"
+          "¿Cuál es la diferencia entre flujo de caja económico y flujo de caja financiero?",
+          "¿Qué es el periodo de recuperación de la inversión (Payback) y cuáles son sus limitaciones como indicador?"
         ],
         'Intermedio': [
           "¿Cómo calcularías la tasa de descuento (COK o WACC) para un proyecto en el sector tecnológico?",
-          "Explica qué es el análisis de sensibilidad y cómo lo usarías para evaluar el riesgo de un proyecto."
+          "Explica qué es el análisis de sensibilidad y cómo lo usarías para evaluar el riesgo de un proyecto.",
+          "¿Qué son los costos hundidos (sunk costs) y por qué no deben incluirse en la evaluación financiera de un nuevo proyecto?",
+          "¿Cómo considerarías el efecto de la inflación al construir el flujo de caja proyectado a 10 años?"
         ],
         'Avanzado': [
           "Dos proyectos mutuamente excluyentes: A tiene mayor VAN pero menor TIR que B. ¿Cuál elegirías y por qué?",
-          "¿Cómo estructurarías un flujo de caja para una startup SaaS con horizonte de 5 años? ¿Qué supuestos son críticos?"
+          "¿Cómo estructurarías un flujo de caja para una startup SaaS con horizonte de 5 años? ¿Qué supuestos son críticos?",
+          "Explica el método de opciones reales (Real Options) para la evaluación de proyectos. ¿En qué escenarios es superior al VAN tradicional?",
+          "Si un proyecto de infraestructura de gran envergadura tiene un perfil de riesgo cambiante a lo largo de sus fases (construcción vs. operación), ¿cómo modelarías la tasa de descuento?",
+          "¿Cómo integrarías criterios ESG (Ambientales, Sociales y de Gobernanza) de forma cuantitativa dentro de la evaluación de viabilidad de un proyecto minero?"
         ]
       },
       'Logística y Cadena de Suministros': {
         'Básico': [
           "¿Qué es la cadena de suministro (supply chain) y cuáles son sus eslabones principales?",
-          "¿Qué diferencia hay entre gestión de inventarios y gestión de almacenes?"
+          "¿Qué diferencia hay entre gestión de inventarios y gestión de almacenes?",
+          "¿Qué es el 'lead time' (tiempo de entrega) y por qué es importante controlarlo en logística?"
         ],
         'Intermedio': [
           "¿Qué es el efecto bullwhip? ¿Cómo afecta los inventarios a lo largo de la cadena?",
-          "Explica los métodos ABC de clasificación de inventarios y cuándo usarías cada categoría."
+          "Explica los métodos ABC de clasificación de inventarios y cuándo usarías cada categoría.",
+          "¿Cuáles son los principales Incoterms que usarías en una importación marítima y cómo definen el riesgo?",
+          "Describe cómo implementarías un sistema de cross-docking y cuáles serían sus requisitos principales."
         ],
         'Avanzado': [
           "Si una empresa tiene altos niveles de sobrestock, ¿qué políticas de revisión de inventarios implementarías y con qué criterios?",
-          "¿Cómo evaluarías el desempeño de un proveedor clave? ¿Qué KPIs son los más relevantes?"
+          "¿Cómo evaluarías el desempeño de un proveedor clave? ¿Qué KPIs son los más relevantes?",
+          "Diseña una estrategia de logística inversa para un e-commerce de moda tecnológica con un alto índice de devoluciones. ¿Cómo minimizarías las pérdidas?",
+          "Ante una disrupción global grave (ej. cierre de puertos o pandemia), ¿cómo reestructurarías una cadena de suministro Lean ('just in time') hacia un modelo resiliente ('just in case')?",
+          "Explica cómo utilizarías tecnologías como Blockchain o IoT para garantizar la trazabilidad de la cadena de frío en la exportación de productos perecibles."
         ]
       }
     };

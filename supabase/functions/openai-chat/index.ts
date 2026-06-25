@@ -1,12 +1,15 @@
 // @ts-nocheck
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// 1. DEFINICIÓN DE CORS CORREGIDA
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
 Deno.serve(async (req: Request) => {
-  // 1. RESPUESTA CORS INMEDIATA
+  // 2. RESPUESTA CORS INMEDIATA
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -14,6 +17,11 @@ Deno.serve(async (req: Request) => {
   try {
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) throw new Error("Falta la API Key en las variables de entorno.");
+
+    // 3. CONEXIÓN A SUPABASE (Para leer los guiones y videos dinámicos)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const contentType = req.headers.get('content-type') || '';
     let body: any = {};
@@ -59,14 +67,13 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // EXTRACCIÓN DE MÚLTIPLES PDFs (TRUCO NINJA PARA EVITAR ERRORES DE TYPESCRIPT)
+      // EXTRACCIÓN DE MÚLTIPLES PDFs
       if (hasDocuments) {
         console.log(`Procesando ${documents.length} documento(s) PDF dinámicamente...`);
         
         let pdfParser;
         let BufferPolyfill;
         try {
-          // Ocultamos las rutas en strings para que el analizador local de TypeScript las ignore
           const pdfParsePkg = "npm:pdf-parse@1.1.1";
           const bufferPkg = "node:buffer";
           
@@ -154,10 +161,63 @@ Deno.serve(async (req: Request) => {
     }
 
     // ==========================================
-    // MODO CONVERSACIÓN EN VIVO
+    // MODO CONVERSACIÓN EN VIVO (CON BASE DE DATOS Y LÍMITES CORTOS PARA DEMO)
     // ==========================================
-    const { messages } = body;
+    const { messages, simData } = body;
     if (!messages || !Array.isArray(messages)) throw new Error("Faltan mensajes.");
+
+    // VALIDACIÓN DE SISTEMA: Si es el primer mensaje, inyectamos contexto y reglas
+    if (simData && messages.length > 0 && messages[0].role === 'system') {
+      
+      const diff = simData.difficulty || simData.diff || 'Básico';
+      let minPreguntas = 3; // Básico: 3 preguntas
+      if (diff === 'Intermedio') minPreguntas = 4; // Intermedio: 4 preguntas
+      if (diff === 'Avanzado') minPreguntas = 5; // Avanzado: 5 preguntas
+
+      // 1. Calculamos el turno actual basándonos estrictamente en el historial del frontend
+      const assistantTurns = messages.filter((m: any) => m.role === 'assistant').length;
+
+      // CHIVATO PARA LA CONSOLA DE SUPABASE (Útil para depurar)
+      console.log(`==== ESTADO DE LA ENTREVISTA ====`);
+      console.log(`Mensajes recibidos desde el Frontend: ${messages.length}`);
+      console.log(`Turnos previos de la IA: ${assistantTurns} de ${minPreguntas}`);
+
+      // 2. Control de flujo ULTRA AGRESIVO inyectado dinámicamente
+      let controlFlujo = "";
+      if (assistantTurns === 0) {
+        controlFlujo = `[SISTEMA INTERNO]: Inicio de entrevista nivel ${diff}. Meta: ${minPreguntas} preguntas en total.\nREGLA ESTRICTA: Haz SOLAMENTE la primera pregunta (1 de ${minPreguntas}). NO saludes excesivamente, NO hagas más de una pregunta en este turno, y ESTÁ TOTALMENTE PROHIBIDO despedirte o cerrar la entrevista. Espera a que el candidato responda.`;
+      } else if (assistantTurns < minPreguntas) {
+        controlFlujo = `[SISTEMA INTERNO]: Progreso: Vas a hacer la pregunta ${assistantTurns + 1} de ${minPreguntas}.\nREGLA ESTRICTA: Reacciona brevemente a la respuesta anterior y formula SOLAMENTE tu siguiente pregunta técnica. NO hagas múltiples preguntas a la vez. ESTÁ TOTALMENTE PROHIBIDO despedirte, agradecer por el tiempo o cerrar la entrevista, porque aún faltan preguntas.`;
+      } else {
+        controlFlujo = `[SISTEMA INTERNO]: Límite alcanzado (${minPreguntas} de ${minPreguntas} preguntas realizadas).\nREGLA ESTRICTA: EL CANDIDATO YA RESPONDIÓ TODO. DEBES FINALIZAR LA ENTREVISTA AHORA MISMO. No hagas más preguntas técnicas. Agradece al candidato por su participación, despídete cordialmente e indícale que los resultados serán evaluados, cerrando obligatoriamente con la palabra clave: ENTREVISTA_FINALIZADA`;
+      }
+
+      // Añadimos el estado como el ÚLTIMO mensaje del array (recency bias) para forzar al LLM a obedecer
+      messages.push({
+        role: 'system',
+        content: controlFlujo
+      });
+
+      // LÓGICA DINÁMICA: Extraer guiones y contexto de la BD
+      if (simData.role) {
+        const { data: recursos, error } = await supabase
+          .from('recursos_entrevista')
+          .select('tipo_recurso, contenido_texto')
+          .eq('rol', simData.role);
+
+        if (!error && recursos && recursos.length > 0) {
+          let contextoBD = "\n\n=== CONTEXTO APRENDIDO DESDE BASE DE DATOS (VIDEOS/GUIONES) ===\n";
+          contextoBD += "IMPORTANTE: Analiza la siguiente información extraída de los guiones y ÚSALA para formular tus preguntas:\n";
+          
+          recursos.forEach((recurso: any) => {
+            contextoBD += `\n[${recurso.tipo_recurso}]: ${recurso.contenido_texto}`;
+          });
+          
+          // Esto se mantiene en el prompt general inicial
+          messages[0].content += contextoBD;
+        }
+      }
+    }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -174,6 +234,14 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
+    console.error("Error en la Edge Function:", error);
+    // 4. CAPTURA DE ERRORES CON CORS INCLUIDO
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 });
