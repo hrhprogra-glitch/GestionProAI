@@ -7,6 +7,7 @@ interface PricingModalProps {
 
 export default function PricingModal({ onClose, onSelectPlan }: PricingModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [showSplash, setShowSplash] = useState(false);
   const [showCulqiCheckout, setShowCulqiCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -16,17 +17,25 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
   const [exp, setExp] = useState('');
   const [cvc, setCvc] = useState('');
 
-  // 1. Análisis: Preparamos la selección para la pasarela de pagos
+  // 1. Análisis: Lógica de presentación de texto (Siempre se muestra)
   const handleInitiatePurchase = (plan: string) => {
     setSelectedPlan(plan);
-    setShowCulqiCheckout(true);
+    
+    // Reiniciamos las vistas para que siempre empiece con la presentación
+    setShowCulqiCheckout(false);
+    setShowSplash(true);
+    
+    // Tiempo para leer el texto antes de pasar al formulario (4 segundos)
+    setTimeout(() => {
+      setShowSplash(false);
+      setShowCulqiCheckout(true);
+    }, 4000);
   };
 
   // 2. Modificación: Validación estricta con sanitización de espacios
   const handleCulqiPayment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Eliminamos cualquier espacio en blanco en todos los campos
     const cleanCard = card.replace(/\s/g, '');
     const cleanExp = exp.replace(/\s/g, '');
     const cleanCvc = cvc.replace(/\s/g, '');
@@ -57,10 +66,10 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
 
-        <div className="p-6 sm:p-8 relative z-10 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 sm:p-8 relative z-10 max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           
           {/* VISTA 1: SELECCIÓN DE PLANES */}
-          {!showCulqiCheckout ? (
+          {!showCulqiCheckout && !showSplash && (
             <>
               <div className="text-center mb-8">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
@@ -84,12 +93,10 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
                   </div>
                   <ul className="space-y-2.5 mb-6 flex-1">
                     <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      1 intento Nivel Intermedio (Cámara/Audio)
+                      <span className="text-cyan-500 font-bold">✓</span> Nivel Básico e Intermedio
                     </li>
-                    <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Límite: 1 vez por semana
+                    <li className="flex items-start gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                      <span className="text-cyan-500 font-bold">✓</span> Límite: 1 vez por semana
                     </li>
                   </ul>
                   <button onClick={() => handleInitiatePurchase('Pack Express')} className="w-full py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 hover:border-cyan-500 font-black rounded-xl transition-all">
@@ -109,16 +116,13 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
                   </div>
                   <ul className="space-y-2.5 mb-6 flex-1">
                     <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      4 intentos Nivel Intermedio
+                      <span className="text-blue-500 font-bold">✓</span> Nivel Básico e Intermedio
+                    </li>
+                    <li className="flex items-start gap-2 text-xs font-bold text-slate-900 dark:text-white">
+                      <span className="text-blue-500 font-bold">✓</span> Límite: 4 veces por semana
                     </li>
                     <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Límite: 4 veces por semana
-                    </li>
-                    <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Métricas de desempeño
+                      <span className="text-blue-500 font-bold">✓</span> Métricas de desempeño
                     </li>
                   </ul>
                   <button onClick={() => handleInitiatePurchase('Plan Estudiante')} className="w-full py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 font-black rounded-xl transition-all">
@@ -141,20 +145,13 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
                   </div>
                   <ul className="space-y-2.5 mb-6 flex-1">
                     <li className="flex items-start gap-2 text-xs font-bold text-slate-900 dark:text-white">
-                      <svg className="w-4 h-4 text-pink-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Simulaciones Ilimitadas
+                      <span className="text-pink-500 font-bold">✓</span> Simulaciones Ilimitadas
                     </li>
                     <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-pink-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Envío de archivos Excel, PowerBI y Word
+                      <span className="text-pink-500 font-bold">✓</span> Nivel Avanzado Desbloqueado
                     </li>
                     <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-pink-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      IA analiza videos y guiones de BD
-                    </li>
-                    <li className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      <svg className="w-4 h-4 text-pink-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
-                      Preguntas dinámicas sobre tus archivos
+                      <span className="text-pink-500 font-bold">✓</span> Análisis de Archivos (Excel, Word, PowerBI)
                     </li>
                   </ul>
                   <button onClick={() => handleInitiatePurchase('Plan Pro')} className="w-full py-2.5 text-sm bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 hover:from-amber-500 hover:via-pink-600 hover:to-purple-700 text-white font-black rounded-xl shadow-md transition-all transform hover:scale-105">
@@ -164,51 +161,74 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
 
               </div>
             </>
-          ) : (
-            
-            /* VISTA 2: EXPLICACIÓN Y MOCKUP DE CULQI */
-            <div className="max-w-md mx-auto animate-in slide-in-from-right-8 duration-300">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Pago Seguro con Culqi</h3>
-                <p className="text-xs text-slate-500">
-                  Estás adquiriendo el <strong>{selectedPlan}</strong>. Por favor, ingresa tu correo personal; este se enlazará con tu base de datos para activar tus beneficios.
+          )}
+
+          {/* VISTA 2: RECORDATORIO VISUAL (SOLO TEXTO) */}
+          {showSplash && (
+            <div className="flex flex-col items-center justify-center py-10 animate-in zoom-in-95 duration-500 min-h-[400px]">
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Preparando Entorno Seguro</h3>
+              
+              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 max-w-md shadow-sm mb-10 text-center">
+                <svg className="w-10 h-10 text-teal-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Tokenización Avanzada Culqi</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                  Tus datos están protegidos. Toda la información bancaria es procesada de forma encriptada directamente por Culqi para asegurar tu <strong>{selectedPlan}</strong>. Tu tarjeta no tocará nuestros servidores.
                 </p>
               </div>
 
-              <form onSubmit={handleCulqiPayment} className="bg-slate-50 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner">
+              <div className="w-10 h-10 border-4 border-slate-200 dark:border-slate-800 border-t-pink-500 rounded-full animate-spin"></div>
+            </div>
+          )}
+
+          {/* VISTA 3: FORMULARIO CULQI LIMPIO */}
+          {showCulqiCheckout && !showSplash && (
+            <div className="max-w-md mx-auto animate-in slide-in-from-right-8 duration-300">
+              <button onClick={() => setShowCulqiCheckout(false)} className="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-white mb-6 flex items-center transition-colors">
+                ← Volver a los planes
+              </button>
+
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Checkout de Pagos</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Estás adquiriendo el <strong>{selectedPlan}</strong>. Ingresa tu correo para enlazar tu progreso.
+                </p>
+              </div>
+
+              <form onSubmit={handleCulqiPayment} className="bg-slate-50 dark:bg-slate-900/80 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-inner">
                 <div className="mb-4">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Correo Personal (Base de Datos)</label>
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1 uppercase tracking-wider">Correo Electrónico</label>
                   <input 
                     type="email" 
                     required 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-2.5 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:border-cyan-500 dark:text-white"
+                    className="w-full p-3 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-xl outline-none focus:border-pink-500 dark:text-white transition-colors"
                     placeholder="tu.correo@ejemplo.com" 
                   />
                 </div>
+                
                 <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Datos de la Tarjeta</label>
-                  <div className="relative">
+                  <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1 uppercase tracking-wider">Número de Tarjeta</label>
+                  <div className="relative mb-3">
                     <input 
                       type="text" 
                       required 
                       maxLength={19}
                       value={card}
                       onChange={(e) => setCard(e.target.value)}
-                      className="w-full p-2.5 pl-10 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:border-cyan-500 dark:text-white"
+                      className="w-full p-3 pl-10 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-xl outline-none focus:border-pink-500 dark:text-white transition-colors"
                       placeholder="1234 1234 1234 1234" 
                     />
-                    <svg className="absolute left-3 top-3 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <span className="absolute left-3 top-3.5 text-slate-400 font-black">#</span>
                   </div>
-                  <div className="flex gap-4 mt-3">
+                  <div className="flex gap-3">
                     <input 
                       type="text" 
                       required 
                       value={exp}
                       onChange={(e) => setExp(e.target.value)}
                       placeholder="MM/AA" 
-                      className="w-1/2 p-2.5 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:border-cyan-500 dark:text-white" 
+                      className="w-1/2 p-3 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-xl outline-none focus:border-pink-500 dark:text-white transition-colors" 
                     />
                     <input 
                       type="text" 
@@ -216,19 +236,14 @@ export default function PricingModal({ onClose, onSelectPlan }: PricingModalProp
                       value={cvc}
                       onChange={(e) => setCvc(e.target.value)}
                       placeholder="CVC" 
-                      className="w-1/2 p-2.5 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:border-cyan-500 dark:text-white" 
+                      className="w-1/2 p-3 text-sm bg-white dark:bg-[#16171d] border border-slate-300 dark:border-slate-600 rounded-xl outline-none focus:border-pink-500 dark:text-white transition-colors" 
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => setShowCulqiCheckout(false)} disabled={isProcessing} className="w-1/3 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-white transition-colors">
-                    Cancelar
-                  </button>
-                  <button type="submit" disabled={isProcessing} className="w-2/3 py-2.5 text-sm bg-[#FF4F4F] hover:bg-[#E63E3E] text-white font-black rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
-                    {isProcessing ? 'Procesando en Culqi...' : 'Pagar de forma segura'}
-                  </button>
-                </div>
+                <button type="submit" disabled={isProcessing} className="w-full py-3.5 text-sm bg-[#FF4F4F] hover:bg-[#E63E3E] text-white font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+                  {isProcessing ? 'Procesando pago...' : 'Pagar'}
+                </button>
               </form>
             </div>
           )}

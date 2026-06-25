@@ -1,16 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../../supabase';
 
 interface SimulationWizardProps {
   selectedSim: { role: string; type: string; diff: string };
   userPlan: string;
   onClose: () => void;
   onStartSimulation: (simType: string, difficulty: string) => void;
+  // Opcional: si tienes el correo del usuario en el componente padre, pásalo como prop para que el conteo sea más exacto.
+  // userEmail?: string;
 }
 
 export default function SimulationWizard({ selectedSim, userPlan, onClose, onStartSimulation }: SimulationWizardProps) {
   const [step, setStep] = useState<number>(1); 
   const [simType, setSimType] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<string | null>(null);
+
+  // NUEVO: Estado y efecto para contar simulaciones de los últimos 7 días
+  const [weeklyAttempts, setWeeklyAttempts] = useState<number>(0);
+  const [loadingAttempts, setLoadingAttempts] = useState<boolean>(true);
+
+  useEffect(() => {
+    const getWeeklyAttempts = async () => {
+      try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        // Consultamos la tabla 'history' para ver cuántos registros hay en los últimos 7 días.
+        // Si tienes el correo del usuario, lo ideal sería agregar: .eq('correo', userEmail)
+        const { count, error } = await supabase
+          .from('history')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', sevenDaysAgo.toISOString());
+          
+        if (error) throw error;
+        setWeeklyAttempts(count || 0);
+      } catch (err) {
+        console.error("Error al obtener intentos:", err);
+      } finally {
+        setLoadingAttempts(false);
+      }
+    };
+
+    getWeeklyAttempts();
+  }, []);
 
   // 1. Análisis y Modificación: Actualizamos la lógica de bloqueo con los nuevos planes
   const isLocked = (nivel: string) => {
@@ -86,65 +118,81 @@ export default function SimulationWizard({ selectedSim, userPlan, onClose, onSta
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-4">
               Paso 2: Seleccionar el nivel de exigencia y formato.
             </p>
-            <div className="space-y-3">
-              {[
-                { nivel: 'Básico', desc: 'Evaluación por texto escrito.' },
-                { nivel: 'Intermedio', desc: 'Cámara y micrófono requeridos.' },
-                { nivel: 'Avanzado', desc: 'Audio, cámara y subida de documentos.' }
-              ].map((item) => {
-                const locked = isLocked(item.nivel);
-                const requiredPlan = getRequiredPlan(item.nivel);
+            
+            {loadingAttempts ? (
+              <div className="py-4 text-center text-sm text-slate-500">Validando intentos disponibles...</div>
+            ) : (
+              <div className="space-y-3">
+                {[
+                  { nivel: 'Básico', desc: 'Evaluación por texto escrito.' },
+                  { nivel: 'Intermedio', desc: 'Cámara y micrófono requeridos.' },
+                  { nivel: 'Avanzado', desc: 'Audio, cámara y subida de documentos.' }
+                ].map((item) => {
+                  const locked = isLocked(item.nivel);
+                  const requiredPlan = getRequiredPlan(item.nivel);
 
-                return (
-                  <button
-                    key={item.nivel}
-                    onClick={() => {
-                      if (locked) {
-                        alert(`Tu plan actual (${userPlan || 'Gratis'}) no permite esto. Debes adquirir el ${requiredPlan} para acceder al nivel ${item.nivel}.`);
-                        return; // Bloquea el avance
-                      }
-                      setDifficulty(item.nivel);
-                      setStep(3); 
-                      setTimeout(() => setStep(4), 2000); 
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex flex-col relative overflow-hidden group ${
-                      locked 
-                        ? 'border-slate-200 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20 cursor-not-allowed opacity-80' 
-                        : 'border-slate-200 dark:border-slate-800 hover:border-teal-500 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-500/10'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <span className={`font-bold ${locked ? 'text-slate-500 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                        Nivel {item.nivel}
+                  return (
+                    <button
+                      key={item.nivel}
+                      onClick={() => {
+                        if (locked) {
+                          alert(`Tu plan actual (${userPlan || 'Gratis'}) no permite esto. Debes adquirir el ${requiredPlan} para acceder al nivel ${item.nivel}.`);
+                          return; // Bloquea el avance
+                        }
+
+                        // NUEVO: Validación estricta de límites por semana en la BD
+                        if (userPlan === 'Pack Express' && weeklyAttempts >= 1) {
+                          alert(`Límite alcanzado: Tu ${userPlan} solo permite 1 simulación por semana. Intentos actuales: ${weeklyAttempts}`);
+                          return;
+                        }
+                        if (userPlan === 'Plan Estudiante' && weeklyAttempts >= 4) {
+                          alert(`Límite alcanzado: Tu ${userPlan} solo permite 4 simulaciones por semana. Intentos actuales: ${weeklyAttempts}`);
+                          return;
+                        }
+
+                        setDifficulty(item.nivel);
+                        setStep(3); 
+                        setTimeout(() => setStep(4), 2000); 
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex flex-col relative overflow-hidden group ${
+                        locked 
+                          ? 'border-slate-200 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/20 cursor-not-allowed opacity-80' 
+                          : 'border-slate-200 dark:border-slate-800 hover:border-teal-500 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-500/10'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center w-full">
+                        <span className={`font-bold ${locked ? 'text-slate-500 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                          Nivel {item.nivel}
+                        </span>
+                        
+                        {/* Icono de Candado o Flecha */}
+                        {locked ? (
+                           <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                           </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium mt-1 pr-16 ${locked ? 'text-slate-400 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {item.desc}
                       </span>
                       
-                      {/* Icono de Candado o Flecha */}
-                      {locked ? (
-                         <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                         </svg>
-                      ) : (
-                        <svg className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                        </svg>
+                      {/* Etiqueta visual de plan requerido */}
+                      {locked && (
+                        <div className="absolute top-3 right-4 flex items-center">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 py-0.5 px-2 rounded-md border border-amber-500/20">
+                            Requiere {requiredPlan.replace('Plan ', '')}
+                          </span>
+                        </div>
                       )}
-                    </div>
-                    <span className={`text-xs font-medium mt-1 pr-16 ${locked ? 'text-slate-400 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {item.desc}
-                    </span>
-                    
-                    {/* Etiqueta visual de plan requerido */}
-                    {locked && (
-                      <div className="absolute top-3 right-4 flex items-center">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 py-0.5 px-2 rounded-md border border-amber-500/20">
-                          Requiere {requiredPlan.replace('Plan ', '')}
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

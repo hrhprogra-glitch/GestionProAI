@@ -81,25 +81,111 @@ export default function SimulationRoom({ simData, onExit }: SimulationRoomProps)
     if (initRef.current) return;
     initRef.current = true;
 
+    // BASE DE DATOS DE PREGUNTAS (Extraídas de tu Excel)
+    const QUESTIONS_DB: Record<string, Record<string, string[]>> = {
+      'Análisis de Operaciones y Procesos': {
+        'Básico': [
+          "¿Qué es un proceso de negocio y cuál es la diferencia entre un proceso y un procedimiento?",
+          "¿Has usado alguna herramienta de mapeo de procesos como Bizagi o Visio? ¿Qué diagramas conoces?",
+          "¿Qué indicadores usarías para medir la eficiencia de un proceso operativo?"
+        ],
+        'Intermedio': [
+          "Explica qué es el análisis de causa raíz. ¿Cómo aplicarías un diagrama de Ishikawa a un problema de calidad?",
+          "¿Qué es la metodología PDCA y en qué contexto la utilizarías?"
+        ],
+        'Avanzado': [
+          "Si detectas un cuello de botella en la atención al cliente, ¿cómo diseñarías una propuesta de mejora? ¿Qué datos necesitarías?"
+        ]
+      },
+      'Gestión Estratégica y Finanzas': {
+        'Básico': [
+          "¿Qué es un Estado de Resultados (EERR) y qué diferencia tiene con un Flujo de Caja?",
+          "¿Qué entiendes por punto de equilibrio (break-even)? ¿Cómo se calcula?"
+        ],
+        'Intermedio': [
+          "¿Qué es el VAN y la TIR? ¿Cuándo un proyecto es financieramente viable según estos indicadores?",
+          "Explica qué es el WACC o COK y para qué se usa en la evaluación de proyectos."
+        ],
+        'Avanzado': [
+          "Si recibes los estados financieros de una empresa, ¿qué ratios calcularías primero para un diagnóstico rápido?",
+          "¿Cómo construirías un modelo de proyección financiera a 5 años para una startup SaaS? ¿Qué supuestos serían críticos?"
+        ]
+      },
+      'Dirección Comercial y Administración': {
+        'Básico': [
+          "¿Qué diferencia hay entre ventas y marketing? ¿Cómo trabajan juntos en una empresa?",
+          "¿Qué es un CRM y para qué lo usaría un equipo comercial?"
+        ],
+        'Intermedio': [
+          "Describe cómo diseñarías un plan de ventas para un producto SaaS dirigido a empresas medianas en Perú.",
+          "¿Cómo manejarías una situación en la que un cliente importante amenaza con cancelar el contrato?"
+        ],
+        'Avanzado': [
+          "¿Cómo estructurarías los KPIs de un equipo comercial de 5 personas? ¿Qué métricas serían no negociables?",
+          "Si la tasa de churn sube al 15% mensual, ¿qué análisis harías y qué acciones tomarías de inmediato?"
+        ]
+      },
+      'Evaluación de Proyectos de Inversión': {
+        'Básico': [
+          "¿Qué es el VAN (Valor Actual Neto) y cuál es la regla de decisión para aceptar un proyecto?",
+          "¿Cuál es la diferencia entre flujo de caja económico y flujo de caja financiero?"
+        ],
+        'Intermedio': [
+          "¿Cómo calcularías la tasa de descuento (COK o WACC) para un proyecto en el sector tecnológico?",
+          "Explica qué es el análisis de sensibilidad y cómo lo usarías para evaluar el riesgo de un proyecto."
+        ],
+        'Avanzado': [
+          "Dos proyectos mutuamente excluyentes: A tiene mayor VAN pero menor TIR que B. ¿Cuál elegirías y por qué?",
+          "¿Cómo estructurarías un flujo de caja para una startup SaaS con horizonte de 5 años? ¿Qué supuestos son críticos?"
+        ]
+      },
+      'Logística y Cadena de Suministros': {
+        'Básico': [
+          "¿Qué es la cadena de suministro (supply chain) y cuáles son sus eslabones principales?",
+          "¿Qué diferencia hay entre gestión de inventarios y gestión de almacenes?"
+        ],
+        'Intermedio': [
+          "¿Qué es el efecto bullwhip? ¿Cómo afecta los inventarios a lo largo de la cadena?",
+          "Explica los métodos ABC de clasificación de inventarios y cuándo usarías cada categoría."
+        ],
+        'Avanzado': [
+          "Si una empresa tiene altos niveles de sobrestock, ¿qué políticas de revisión de inventarios implementarías y con qué criterios?",
+          "¿Cómo evaluarías el desempeño de un proveedor clave? ¿Qué KPIs son los más relevantes?"
+        ]
+      }
+    };
+
     const initSimulation = async () => {
       const advancedRule = isAdvanced 
-        ? "REGLA OBLIGATORIA: Eres libre de pedirle al candidato que suba documentos en diferentes preguntas. Dile explícitamente: 'Adjunta tu resolución a la plataforma y explícamela por voz'." 
-        : "";
+         ? "REGLA OBLIGATORIA: Eres libre de pedirle al candidato que suba documentos en diferentes preguntas. Dile explícitamente: 'Adjunta tu resolución a la plataforma y explícamela por voz'." 
+         : "";
+
+      // Extraemos las preguntas correspondientes o usamos un default si no hay
+      const roleQuestions = QUESTIONS_DB[simData.role]?.[actualDifficulty] || [
+        "Cuéntame sobre tu experiencia previa relacionada a este rol.",
+        "¿Cómo resolverías un problema crítico de tiempo en un proyecto?",
+        "¿Por qué deberíamos seleccionarte a ti?"
+      ];
+      
+      const preguntasTexto = roleQuestions.map((q, i) => `Pregunta ${i + 1}: "${q}"`).join('\n');
 
       const systemPrompt: Message = {
         role: 'system',
-        content: `Actúa como reclutador Senior para el rol de '${simData.role}'. Nivel: ${actualDifficulty}. 
-        Reglas: 
-        1) Haz exactamente 3 preguntas técnicas en total, UNA por mensaje. 
-        2) Numera las preguntas al inicio ("[Pregunta 1 de 3]"). 
-        ${advancedRule}
-        3) Si el usuario responde con el texto "[Respuesta de voz registrada]", significa que ya habló por su micrófono, evalúa eso internamente y hazle la siguiente pregunta. 
-        4) SOLO después de leer su respuesta a tu tercera pregunta, despídete y escribe EXACTAMENTE: ENTREVISTA_FINALIZADA.`
+        content: `Actúa como reclutador Senior para el rol de '${simData.role}'. Nivel: ${actualDifficulty}.
+         Reglas ESTRICTAS:
+         1) Haz exactamente ${roleQuestions.length} preguntas técnicas en total, UNA por mensaje.
+         2) Numera las preguntas al inicio ("[Pregunta X de ${roleQuestions.length}]").
+         3) OBLIGATORIO: Debes usar EXACTAMENTE estas preguntas definidas para este rol y nivel:
+         ${preguntasTexto}
+         ${advancedRule}
+         4) Si el usuario responde con el texto "[Respuesta de voz registrada]", significa que ya habló por su micrófono, evalúa eso internamente y hazle la siguiente pregunta.
+         5) SOLO después de leer su respuesta a tu última pregunta, despídete y escribe EXACTAMENTE: ENTREVISTA_FINALIZADA.`
       };
-
+      
       setMessages([systemPrompt]);
       await fetchAIResponse([systemPrompt]);
     };
+
     initSimulation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simData]);

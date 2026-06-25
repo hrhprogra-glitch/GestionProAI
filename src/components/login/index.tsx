@@ -15,8 +15,8 @@ export default function LoginModule() {
   const [userName, setUserName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  // NUEVO: Estado para almacenar la meta-data incluyendo el ciclo (semester)
-  const [userMetadata, setUserMetadata] = useState<{university?: string, career?: string, semester?: string, role?: string}>({});
+  // NUEVO: Estado para almacenar la meta-data incluyendo el ciclo (semester) y el plan
+  const [userMetadata, setUserMetadata] = useState<{university?: string, career?: string, semester?: string, role?: string, plan?: string}>({});
 
   useEffect(() => {
     const savedUser = localStorage.getItem('remembered_user');
@@ -27,8 +27,9 @@ export default function LoginModule() {
       setUserMetadata({
         university: parsed.universidad,
         career: parsed.carrera,
-        semester: parsed.ciclo, // NUEVO
-        role: parsed.objetivo
+        semester: parsed.ciclo, 
+        role: parsed.objetivo,
+        plan: parsed.plan // <-- PLAN AGREGADO AQUÍ
       });
       setIsLoggedIn(true);
     }
@@ -54,8 +55,9 @@ export default function LoginModule() {
       const meta = {
         university: data.universidad,
         career: data.carrera,
-        semester: data.ciclo, // NUEVO
-        role: data.objetivo
+        semester: data.ciclo, 
+        role: data.objetivo,
+        plan: data.plan // <-- PLAN AGREGADO AQUÍ
       };
       setUserMetadata(meta);
       setIsLoggedIn(true);
@@ -66,8 +68,9 @@ export default function LoginModule() {
           correo: data.correo,
           universidad: data.universidad,
           carrera: data.carrera,
-          ciclo: data.ciclo, // NUEVO
-          objetivo: data.objetivo
+          ciclo: data.ciclo, 
+          objetivo: data.objetivo,
+          plan: data.plan // <-- PLAN AGREGADO AQUÍ
         }));
       }
     }
